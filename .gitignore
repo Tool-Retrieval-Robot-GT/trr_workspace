@@ -1,0 +1,15 @@
+# Ignore build, install, and log directories
+build/
+install/
+log/
+
+# Ignore Python bytecode
+*.pyc
+__pycache__/
+
+# Ignore hidden system files
+.DS_Store
+Thumbs.db
+
+# Ignore compiled shared objects
+*.so
