@@ -16,91 +16,45 @@ class Commander(Node):
     def __init__(self):
         super().__init__('commander')
         timer_period = 0.02
-        self.wheel_seperation = 0.122
-        self.wheel_base = 0.156
-        self.wheel_radius = 0.026
-        self.wheel_steering_y_offset = 0.03
-        self.steering_track = self.wheel_seperation - 2*self.wheel_steering_y_offset
 
-        self.pos = np.array([0,0,0,0], float)
         self.vel = np.array([0,0,0,0], float) #left_front, right_front, left_rear, right_rear
 
-        self.pub_pos = self.create_publisher(Float64MultiArray, '/forward_position_controller/commands', 10)
         self.pub_vel = self.create_publisher(Float64MultiArray, '/forward_velocity_controller/commands', 10)
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
     def timer_callback(self):
         global vel_msg, mode_selection
 
-        # opposite phase
-        if(mode_selection == 1):
-            
-            vel_steerring_offset = vel_msg.angular.z * self.wheel_steering_y_offset
-            sign = np.sign(vel_msg.linear.x)
+        linear_x = vel_msg.linear.x
+        linear_y = vel_msg.linear.y
+        
+        # Maximum linear velocities
+        max_forward_back = 7.5
+        max_right_left = 7.5
 
-            self.vel[0] = sign*math.hypot(vel_msg.linear.x - vel_msg.angular.z*self.steering_track/2, vel_msg.angular.z*self.wheel_base/2) - vel_steerring_offset
-            self.vel[1] = sign*math.hypot(vel_msg.linear.x + vel_msg.angular.z*self.steering_track/2, vel_msg.angular.z*self.wheel_base/2) + vel_steerring_offset
-            self.vel[2] = sign*math.hypot(vel_msg.linear.x - vel_msg.angular.z*self.steering_track/2, vel_msg.angular.z*self.wheel_base/2) - vel_steerring_offset
-            self.vel[3] = sign*math.hypot(vel_msg.linear.x + vel_msg.angular.z*self.steering_track/2, vel_msg.angular.z*self.wheel_base/2) + vel_steerring_offset
+        # Normalize input velocities
+        linear_x = max(min(linear_x, max_forward_back), -max_forward_back)
+        linear_y = max(min(linear_y, max_right_left), -max_right_left)
 
-            a0 = 2*vel_msg.linear.x + vel_msg.angular.z*self.steering_track
-            a1 = 2*vel_msg.linear.x - vel_msg.angular.z*self.steering_track
+        # Calculate wheel velocities
+        vfl = linear_x - linear_y  # Front Left Wheel
+        vfr = linear_x + linear_y  # Front Right Wheel
+        vrl = linear_x - linear_y  # Back Left Wheel
+        vrr = linear_x + linear_y  # Back Right Wheel
 
-            if a0 != 0:
-                self.pos[0] = math.atan(vel_msg.angular.z*self.wheel_base/(a0))
-            else:
-                self.pos[0] = 0
-                
-            if a1 != 0:
-                self.pos[1] = math.atan(vel_msg.angular.z*self.wheel_base/(a1))
-            else:
-                self.pos[1] = 0
+        # Determine the maximum absolute velocity for normalization
+        max_velocity = max(abs(vfl), abs(vfr), abs(vrl), abs(vrr), 1)  # Ensure at least 1 for scaling
 
-            self.pos[2] = -self.pos[0]
-            self.pos[3] = -self.pos[1]
+        # Normalize wheel velocities to the range [-1, 1]
+        self.vel = [
+            vfl,
+            vfr,
+            vrl,
+            vrr,
+        ]
 
-        # in-phase
-        elif(mode_selection == 2):
-
-            V = math.hypot(vel_msg.linear.x, vel_msg.linear.y)
-            sign = np.sign(vel_msg.linear.x)
-            
-            if(vel_msg.linear.x != 0):
-                ang = vel_msg.linear.y / vel_msg.linear.x
-            else:
-                ang = 0
-            
-            self.pos[0] = math.atan(ang)
-            self.pos[1] = math.atan(ang)
-            self.pos[2] = self.pos[0]
-            self.pos[3] = self.pos[1]
-            
-            self.vel[:] = sign*V
-            
-        # pivot turn
-        elif(mode_selection == 3):
-
-            self.pos[0] = -math.atan(self.wheel_base/self.steering_track)
-            self.pos[1] = math.atan(self.wheel_base/self.steering_track)
-            self.pos[2] = math.atan(self.wheel_base/self.steering_track)
-            self.pos[3] = -math.atan(self.wheel_base/self.steering_track)
-            
-            self.vel[0] = -vel_msg.angular.z
-            self.vel[1] = vel_msg.angular.z
-            self.vel[2] = self.vel[0]
-            self.vel[3] = self.vel[1]
-
-        else:
-
-            self.pos[:] = 0
-            self.vel[:] = 0
-
-        pos_array = Float64MultiArray(data=self.pos) 
-        vel_array = Float64MultiArray(data=self.vel) 
-        self.pub_pos.publish(pos_array)
+        vel_array = Float64MultiArray(data=self.vel)
         self.pub_vel.publish(vel_array)
-        self.pos[:] = 0
-        self.vel[:] = 0
 
 class Joy_subscriber(Node):
 

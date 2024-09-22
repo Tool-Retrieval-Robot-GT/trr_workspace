@@ -79,10 +79,10 @@
         </joint>
     </xacro:macro>
 
-    <xacro:wheel prefix="drivewhl_1" x_reflect="-1" y_reflect="1" />
-    <xacro:wheel prefix="drivewhl_2" x_reflect="-1" y_reflect="-1" />
-    <xacro:wheel prefix="drivewhl_3" x_reflect="1" y_reflect="1" />
-    <xacro:wheel prefix="drivewhl_4" x_reflect="1" y_reflect="-1" />
+    <xacro:wheel prefix="drivewhl_fl" x_reflect="1" y_reflect="1" />
+    <xacro:wheel prefix="drivewhl_fr" x_reflect="1" y_reflect="-1" />
+    <xacro:wheel prefix="drivewhl_rl" x_reflect="-1" y_reflect="1" />
+    <xacro:wheel prefix="drivewhl_rr" x_reflect="-1" y_reflect="-1" />
 
     <!-- =============== Gazebo =============== -->
 
@@ -104,10 +104,10 @@
 
     <xacro:base_gazebo_v0/>
 
-    <xacro:wheel_gazebo_v0 prefix="drivewhl_1"/>
-    <xacro:wheel_gazebo_v0 prefix="drivewhl_2"/>
-    <xacro:wheel_gazebo_v0 prefix="drivewhl_3"/>
-    <xacro:wheel_gazebo_v0 prefix="drivewhl_4"/>
+    <xacro:wheel_gazebo_v0 prefix="drivewhl_fl"/>
+    <xacro:wheel_gazebo_v0 prefix="drivewhl_fr"/>
+    <xacro:wheel_gazebo_v0 prefix="drivewhl_rl"/>
+    <xacro:wheel_gazebo_v0 prefix="drivewhl_rr"/>
 
     <xacro:trr_robot_gazebo/>
     <xacro:trr_robot_ros2_control/>

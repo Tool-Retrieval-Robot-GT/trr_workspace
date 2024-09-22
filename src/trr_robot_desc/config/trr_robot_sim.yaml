@@ -11,10 +11,10 @@ controller_manager:
 forward_velocity_controller:
   ros__parameters:
     joints:
-      - drivewhl_1_joint
-      - drivewhl_2_joint
-      - drivewhl_3_joint
-      - drivewhl_4_joint
+      - drivewhl_fl_joint
+      - drivewhl_fr_joint
+      - drivewhl_rl_joint
+      - drivewhl_rr_joint
     interface_name: velocity
     command_interfaces:
       - velocity
