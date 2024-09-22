@@ -29,8 +29,8 @@ class Commander(Node):
         linear_y = vel_msg.linear.y
         
         # Maximum linear velocities
-        max_forward_back = 7.5
-        max_right_left = 7.5
+        max_forward_back = 20
+        max_right_left = 20
 
         # Normalize input velocities
         linear_x = max(min(linear_x, max_forward_back), -max_forward_back)
@@ -42,16 +42,8 @@ class Commander(Node):
         vrl = linear_x - linear_y  # Back Left Wheel
         vrr = linear_x + linear_y  # Back Right Wheel
 
-        # Determine the maximum absolute velocity for normalization
-        max_velocity = max(abs(vfl), abs(vfr), abs(vrl), abs(vrr), 1)  # Ensure at least 1 for scaling
-
-        # Normalize wheel velocities to the range [-1, 1]
-        self.vel = [
-            vfl,
-            vfr,
-            vrl,
-            vrr,
-        ]
+        #Set the velocity array
+        self.vel = [vfl, vfr, vrl, vrr]
 
         vel_array = Float64MultiArray(data=self.vel)
         self.pub_vel.publish(vel_array)
@@ -70,18 +62,8 @@ class Joy_subscriber(Node):
     def listener_callback(self, data):
         global vel_msg, mode_selection
 
-        if(data.buttons[0] == 1):   # in-phase # A button of Xbox 360 controller
-            mode_selection = 2
-        elif(data.buttons[4] == 1): # opposite phase # LB button of Xbox 360 controller
-            mode_selection = 1
-        elif(data.buttons[5] == 1): # pivot turn # RB button of Xbox 360 controller
-            mode_selection = 3
-        else:
-            mode_selection = 4
-
-        vel_msg.linear.x = data.axes[1]*7.5
-        vel_msg.linear.y = data.axes[0]*7.5
-        vel_msg.angular.z = data.axes[3]*10
+        vel_msg.linear.x = data.axes[1]*20
+        vel_msg.linear.y = data.axes[0]*20
 
 if __name__ == '__main__':
     rclpy.init(args=None)
