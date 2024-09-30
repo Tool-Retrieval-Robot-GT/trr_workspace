@@ -1,8 +1,5 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="trr_robot">
-
-    <xacro:include filename="$(find trr_robot_desc)/ros2_control/ros2_control.xacro" />
-
     <xacro:property name="base_width" value="0.4572"/>
     <xacro:property name="base_length" value="0.5588"/>
     <xacro:property name="base_height" value="0.0762"/>
@@ -107,7 +104,6 @@
     <xacro:wheel_gazebo_v0 prefix="drivewhl_rl"/>
     <xacro:wheel_gazebo_v0 prefix="drivewhl_rr"/>
 
-    <xacro:trr_robot_gazebo/>
-    <xacro:trr_robot_ros2_control/>
+    <xacro:include filename="ros2_control.xacro" />
 
 </robot>
