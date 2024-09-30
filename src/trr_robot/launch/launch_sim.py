@@ -17,18 +17,15 @@ def generate_launch_description():
     # Launch Arguments
     use_sim_time = LaunchConfiguration('use_sim_time', default=True)
 
-    trr_robot_desc_path = os.path.join(
-        get_package_share_directory('trr_robot_desc'))
-    
-    trr_robot_sim_path = os.path.join(
-        get_package_share_directory('trr_robot_sim'))
+    trr_robot_path = os.path.join(
+        get_package_share_directory('trr_robot'))
 
     # Set gazebo sim resource path
     gazebo_resource_path = SetEnvironmentVariable(
         name='GZ_SIM_RESOURCE_PATH',
         value=[
-            os.path.join(trr_robot_sim_path, 'worlds'), ':' +
-            str(Path(trr_robot_desc_path).parent.resolve())
+            os.path.join(trr_robot_path, 'worlds'), ':' +
+            str(Path(trr_robot_path).parent.resolve())
             ]
         )
 
@@ -50,7 +47,7 @@ def generate_launch_description():
                 ]
              )
 
-    xacro_file = os.path.join(trr_robot_desc_path, 'robots', 'trr_robot.urdf.xacro')
+    xacro_file = os.path.join(trr_robot_path, 'description', 'trr_robot.urdf.xacro')
 
     doc = xacro.process_file(xacro_file, mappings={'use_sim' : 'true'})
 
@@ -106,7 +103,7 @@ def generate_launch_description():
         output='screen'
     )
 
-    rviz_config_file = os.path.join(trr_robot_desc_path, 'config', 'trr_robot_config.rviz')
+    rviz_config_file = os.path.join(trr_robot_path, 'config', 'view_bot.rviz')
 
     rviz = Node(
         package="rviz2",
