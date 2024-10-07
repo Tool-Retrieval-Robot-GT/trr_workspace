@@ -95,25 +95,15 @@ def generate_launch_description():
         output='screen'
     )
 
-    bridge_params = os.path.join(trr_robot_path, 'config', 'gazebo_bridge.yaml')
-
     # Bridge
     bridge = Node(
-        package='ros_gz_bridge',
-        executable='parameter_bridge',
+        package="ros_gz_bridge",
+        executable="parameter_bridge",
         arguments=[
-            '--ros-args',
-            '-p',
-            f'config_file:={bridge_params}',
+            "/depth_camera@sensor_msgs/msg/Image[gz.msgs.Image",
+            "/depth_camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo",
+            "/depth_camera/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked"
         ],
-        output='screen',
-    )
-
-    # Image bridge
-    image_bridge = Node(
-        package='ros_gz_image',
-        executable='image_bridge',
-        arguments=['/camera/image_raw'],
         output='screen',
     )
 
@@ -146,6 +136,5 @@ def generate_launch_description():
         node_robot_state_publisher,
         gz_spawn_entity,
         bridge,
-        image_bridge,
         rviz,
     ])
