@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="trr_robot">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="bcr_bot">
+
     <xacro:property name="base_width" value="0.4572"/>
     <xacro:property name="base_length" value="0.5588"/>
     <xacro:property name="base_height" value="0.0762"/>
@@ -9,8 +10,12 @@
     <xacro:property name="wheel_ygap" value="0.0127"/>
     <xacro:property name="wheel_zoff" value="0.0381"/>
     <xacro:property name="wheel_xoff" value="0.215"/>
-    
-    <!-- =============== Link & Joint =============== -->
+
+    <!-- ............................... LOAD MACROS ................................. -->
+
+    <xacro:include filename="$(find trr_robot)/description/gz.xacro"/>
+
+    <!-- ................................ BASE LINK .................................. -->
     <link name="base_footprint"></link>
 
     <joint name="base_joint" type="fixed">
@@ -41,7 +46,7 @@
         </inertial>
     </link>
 
-    <!-- Wheels -->
+    <!-- ................................ WHEELS ..................................... -->
     <xacro:macro name="wheel" params="prefix x_reflect y_reflect">
         <link name="${prefix}_link">
             <visual>
@@ -79,31 +84,31 @@
     <xacro:wheel prefix="drivewhl_rl" x_reflect="-1" y_reflect="1" />
     <xacro:wheel prefix="drivewhl_rr" x_reflect="-1" y_reflect="-1" />
 
-    <!-- =============== Gazebo =============== -->
+    <!-- Depth CAMERA -->
 
-    <xacro:macro name="base_gazebo_v0">
-        <gazebo reference="base_link">
-            <selfCollide>false</selfCollide>
-            <mu1 value="0.05" />
-            <mu2 value="0.05" />
-        </gazebo>
-    </xacro:macro>
+    <link name="depth_camera">
+        <visual>
+            <geometry>
+                <box size="0.010 0.03 0.03"/>
+            </geometry>
+            <material name="Cyan">
+                <color rgba="0 1.0 1.0 1.0"/>
+            </material>
+        </visual>
+    </link>
 
-    <xacro:macro name="wheel_gazebo_v0" params="prefix">
-        <gazebo reference="${prefix}_link">
-            <selfCollide>false</selfCollide>
-            <mu1 value="1.2" />
-            <mu2 value="1.2" />
-        </gazebo>
-    </xacro:macro>
+    <joint name="depth_camera_joint" type="fixed">
+        <origin xyz="0.305 0 0.08" rpy="0 0 0"/>
+        <parent link="base_link"/>
+        <child link="depth_camera"/>
+    </joint>
 
-    <xacro:base_gazebo_v0/>
+    <link name="depth_camera_optical"/>
 
-    <xacro:wheel_gazebo_v0 prefix="drivewhl_fl"/>
-    <xacro:wheel_gazebo_v0 prefix="drivewhl_fr"/>
-    <xacro:wheel_gazebo_v0 prefix="drivewhl_rl"/>
-    <xacro:wheel_gazebo_v0 prefix="drivewhl_rr"/>
-
-    <xacro:include filename="ros2_control.xacro" />
+    <joint name="depth_camera_optical_joint" type="fixed">
+        <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+        <parent link="depth_camera"/>
+        <child link="depth_camera_optical"/>
+    </joint>
 
 </robot>
