@@ -4,8 +4,6 @@ from os.path import join
 from xacro import parse, process_doc
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration, Command
 
 from launch_ros.actions import Node
 
@@ -19,36 +17,15 @@ def get_xacro_to_doc(xacro_file_path, mappings):
 def generate_launch_description():
    
     trr_robot_path = get_package_share_directory("trr_robot")
-    position_x = LaunchConfiguration("position_x")
-    position_y = LaunchConfiguration("position_y")
-    orientation_yaw = LaunchConfiguration("orientation_yaw")
-    camera_enabled = LaunchConfiguration("camera_enabled", default=True)
-    stereo_camera_enabled = LaunchConfiguration("stereo_camera_enabled", default=False)
-    two_d_lidar_enabled = LaunchConfiguration("two_d_lidar_enabled", default=True)
-    odometry_source = LaunchConfiguration("odometry_source")
 
-    # robot_description_content = get_xacro_to_doc(
-    #     join(trr_robot_path, "description", "trr_robot.xacro"),
-    #     {"sim_gz": "true",
-    #      "two_d_lidar_enabled": "true",
-    #      "conveyor_enabled": "false",
-    #      "camera_enabled": "true"
-    #     }
-    # ).toxml()
+    robot_desc = join(trr_robot_path, 'description', 'trr_robot.xacro')
 
     robot_state_publisher = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
         name="robot_state_publisher",
         parameters=[
-                    {'robot_description': Command( \
-                    ['xacro ', join(trr_robot_path, 'description/trr_robot.xacro'),
-                    ' camera_enabled:=', camera_enabled,
-                    ' stereo_camera_enabled:=', stereo_camera_enabled,
-                    ' two_d_lidar_enabled:=', two_d_lidar_enabled,
-                    ' odometry_source:=', odometry_source,
-                    ' sim_gz:=', "true"
-                    ])}],
+                    {'robot_description': robot_desc}],
         remappings=[
             ('/joint_states', 'trr_robot/joint_states'),
         ]
@@ -62,9 +39,12 @@ def generate_launch_description():
             "-name", "trr_robot",
             "-allow_renaming", "true",
             "-z", "0.28",
-            "-x", position_x,
-            "-y", position_y,
-            "-Y", orientation_yaw
+            '-x', '0.0',
+            '-y', '0.0',
+            '-z', '0.5',
+            '-R', '0.0',
+            '-P', '0.0',
+            '-Y', '0.0'
         ]
     )
 
@@ -107,13 +87,6 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        DeclareLaunchArgument("camera_enabled", default_value = camera_enabled),
-        DeclareLaunchArgument("stereo_camera_enabled", default_value = stereo_camera_enabled),
-        DeclareLaunchArgument("two_d_lidar_enabled", default_value = two_d_lidar_enabled),
-        DeclareLaunchArgument("position_x", default_value="0.0"),
-        DeclareLaunchArgument("position_y", default_value="0.0"),
-        DeclareLaunchArgument("orientation_yaw", default_value="0.0"),
-        DeclareLaunchArgument("odometry_source", default_value="world"),
         robot_state_publisher,
         gz_spawn_entity, transform_publisher, gz_ros2_bridge
     ])
