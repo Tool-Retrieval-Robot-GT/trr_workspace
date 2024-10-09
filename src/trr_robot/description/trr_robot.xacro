@@ -84,15 +84,15 @@
     <xacro:wheel prefix="drivewhl_rl" x_reflect="-1" y_reflect="1" />
     <xacro:wheel prefix="drivewhl_rr" x_reflect="-1" y_reflect="-1" />
 
-    <!-- Depth CAMERA -->
+    <!-- ............................ Depth Camera................................... -->
 
     <link name="depth_camera">
         <visual>
             <geometry>
                 <box size="0.010 0.03 0.03"/>
             </geometry>
-            <material name="Cyan">
-                <color rgba="0 1.0 1.0 1.0"/>
+            <material name="Green">
+                <color rgba="0.0 1.0 0.0 1.0"/>
             </material>
         </visual>
     </link>
@@ -109,6 +109,32 @@
         <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
         <parent link="depth_camera"/>
         <child link="depth_camera_optical"/>
+    </joint>
+
+    <!-- ............................ LIDAR ................................... -->
+
+    <link name="lidar">
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder length="0.06" radius="0.075"/>
+            </geometry>
+        </collision>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder length="0.06" radius="0.075"/>
+            </geometry>
+            <material name="Red">
+                <color rgba="1.0 0.0 0.0 1.0"/>
+            </material>
+        </visual>
+    </link>
+
+    <joint name="lidar_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="lidar"/>
+        <origin xyz="0.0 0 0.08" rpy="0 0 0" />
     </joint>
 
 </robot>

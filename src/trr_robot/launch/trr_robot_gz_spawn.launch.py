@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from os.path import join
-from xacro import parse, process_doc
+from xacro import process_file
 
 from launch import LaunchDescription
 
@@ -9,16 +9,13 @@ from launch_ros.actions import Node
 
 from ament_index_python.packages import get_package_share_directory
 
-def get_xacro_to_doc(xacro_file_path, mappings):
-    doc = parse(open(xacro_file_path))
-    process_doc(doc, mappings=mappings)
-    return doc
-
 def generate_launch_description():
    
     trr_robot_path = get_package_share_directory("trr_robot")
 
-    robot_desc = join(trr_robot_path, 'description', 'trr_robot.xacro')
+    robot_desc_path = join(trr_robot_path, 'description', 'trr_robot.xacro')
+    doc = process_file(robot_desc_path, mappings={'use_sim' : 'true'})
+    robot_desc = doc.toprettyxml(indent='  ')
 
     robot_state_publisher = Node(
         package="robot_state_publisher",
