@@ -32,9 +32,9 @@ def generate_launch_description():
         name="rviz2",
         arguments=[
             '-d' + os.path.join(
-                pkg_trr,
+                get_package_share_directory('nav2_bringup'),
                 'rviz',
-                'nav2.rviz'
+                'nav2_default_view.rviz'
             )
         ]
     )
