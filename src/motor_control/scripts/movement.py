@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 
+# note that all print statements print to the terminal so they are 
+# strictly used for debugging and testing code
+
 import rclpy
 from rclpy.node import Node
 import serial
 from std_msgs.msg import String
+import time
 
-comLine = serial.Serial('/dev/ttyUSB0') # Change when device is connected
+comLine = serial.Serial('/dev/ttyUSB0', 9600) # Change when device is connected
 
 
 class motorDriverComm(Node):
@@ -15,35 +19,34 @@ class motorDriverComm(Node):
         # Create a publisher to update log
         self.publisher = self.create_publisher(String, 'Motor Communication', 10)
 
-        # Create a timer
+        # Create a timer to be used for later communication
         self.timer = self.create_timer(0.01, self.timer_callback)
 
-    def handleInput(self):
-        print("Type 0 for automatic control with PID or 1 for automatic user control")
-        chosenOption = int(input())
-        comLine.write(chosenOption)
-        if(chosenOption == 0):
+    def handleTestInput(self):
+        print("Type 0 for automatic control with PID or 1 for manual user control")
+        chosenOption = input()
+        comLine.write(chosenOption.encode())
+        if(chosenOption == "0"):
             print("Please input a speed to set (up to 255):")
-            chosenSpeed = int(input())
-            comLine.write(chosenSpeed)
+            chosenSpeed = input()
+            comLine.write(chosenSpeed.encode())
             print("Type 1 at any time to break out of automatic control")
             while(int(input()) != 1):
                 continue
             
-        elif(chosenOption == 1):
+        elif(chosenOption == "1"):
             # Get the motor from the user
             print("Please type the associated number to the motor you wish to control:")
-            print("1. Front Left\n2. Back Left\n3. Front Right\n 4. Back Right")
-            chosenMotor = int(input())
-            comLine.write(chosenMotor)
+            print("1. Front Left\n2. Front Right\n3. Back Left\n4. Back Right")
+            chosenMotor = input()
             print(chosenMotor)
+            comLine.write(chosenMotor.encode())
 
             # Get the function to call on the motor
             print("Please type the associated number to the function you wish to call:")
             print("1. Move foreward\n2. Move backward\n3. Control Speed")
-            chosenFunction = int(input())
-            print(chosenFunction)
-            #comLine.write(chosenFunction)
+            chosenFunction = input()
+            comLine.write(chosenFunction.encode())
 
             # If the user wants to set the speed
             if(chosenFunction == 3):
@@ -58,10 +61,7 @@ def main(args=None):
     rclpy.init(args=args)
     motorCommSystem = motorDriverComm
     while rclpy.ok():
-        motorDriverComm.handleInput(motorCommSystem)
-        print("Here")
-        #rclpy.spin(motorDriverComm)
-        print("here")
+        motorDriverComm.handleTestInput(motorCommSystem)
     motorDriverComm.destroy_node()
     rclpy.shutdown()
 
