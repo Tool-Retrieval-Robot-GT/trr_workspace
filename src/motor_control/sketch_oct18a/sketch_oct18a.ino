@@ -1,14 +1,7 @@
 #include <Arduino.h>
 #include <PID_v1.h>
 
-//Declare the pins on the ARDUINO
-constexpr int DIGITAL0 = 1,DIGITAL1 = 2;    // Doubles as TX and RX respectively
-constexpr int DIGITAL2 = 5, DIGITAL3 = 6, DIGITAL4 = 7, DIGITAL5 = 8, DIGITAL6 = 9, DIGITAL7 = 10, DIGITAL8 = 11, DIGITAL9 = 12, DIGITAL10 = 13, DIGITAL11 = 14, DIGITAL12 = 15;
-
 // Declare the motor driver pins
-//constexpr int INA1 = 20, INA2 = 19, PWMA = 8, INB1 = 10, INB2 = 7, PWMB = 9;
-//constexpr int INA3 = 11, INA4 = 15, PWMC = 12, INB3 = 13, INB4 = 16, PWMD = 11;
-
 constexpr int INA1 = A0, INA2 = A1, PWMA = 5, INB1 = 4, INB2 = 7, PWMB = 6;
 constexpr int INA3 = 8, INA4 = 12, PWMC = 9, INB3 = 10, INB4 = 13, PWMD = 11;
 constexpr int PIDINL, PIDINR, PIDOUTL, PIDOUTR;
@@ -37,7 +30,7 @@ void updateEncoderCount4();
 
 void fault_detected()
 {
-  //interruptFlag = true;
+  //interruptFlag = true; // Uncomment when interrupts are tested on motor controls
 }
 
 class motorDriver
@@ -89,26 +82,41 @@ public:
     digitalWrite(in2, 0);
     analogWrite(pwm, 0);
   }
+
+ /*
+  * Drives the motor foreward for one second
+  */
   inline void moveForeward()
   {
     // Make sure backwards is off before turning forewards on
-    Serial.println("In foreward");
     digitalWrite(in2, 0);
     digitalWrite(in1, 1);
-    delay(100);
+    delay(1000); // Move for one second
   }
+
+ /*
+  * Drives the motor backwards for one second
+  */
   inline void moveBackward()
   {
     // Make sure forewards is off before turning backwards on
-    Serial.println("In backward");
     digitalWrite(in1, 0);
     digitalWrite(in2, 1);
-    delay(100);
+    delay(1000); // Move for one second
   }
+
+ /*
+  * Changes the speed of the PWM signal
+  */
   inline void changeSpeed(int speed)
   {
     analogWrite(pwm, speed);
   }
+
+ /*
+  * Adjusts the motors to account for a speed and a direction
+  * Note: This code is still in testing / writing
+  */
   inline void pidMoveMotor(int calculatedValue)
   {
     changeSpeed(abs(calculatedValue));
@@ -127,15 +135,6 @@ void setup()
 {
   Serial.begin(9600);
 
-  pinMode(ENCODER1, INPUT);
-  pinMode(ENCODER2, INPUT);
-  pinMode(ENCODER3, INPUT);
-  pinMode(ENCODER4, INPUT);
-  pinMode(ENCODER5, INPUT);
-  pinMode(ENCODER6, INPUT);
-  pinMode(ENCODER7, INPUT);
-  pinMode(ENCODER8, INPUT);
-
   int intr1 = digitalPinToInterrupt(2), intr2 = digitalPinToInterrupt(3);
   if(intr1 == -1)
   {
@@ -150,6 +149,18 @@ void setup()
     attachInterrupt(2, fault_detected, LOW);
     attachInterrupt(3, fault_detected, LOW);
   }
+
+  // This code relates to PID control: 
+
+  pinMode(ENCODER1, INPUT);
+  pinMode(ENCODER2, INPUT);
+  pinMode(ENCODER3, INPUT);
+  pinMode(ENCODER4, INPUT);
+  pinMode(ENCODER5, INPUT);
+  pinMode(ENCODER6, INPUT);
+  pinMode(ENCODER7, INPUT);
+  pinMode(ENCODER8, INPUT);
+
   setPointLF = 100;
   setPointLB = 100;
   setPointRF = 100;
@@ -166,7 +177,7 @@ void setup()
 
 void loop()
 {
-  // Make the motor objects
+  // Make the motor objects and set them to half power
   motorDriver frontLeftMotor(true, true);
   frontLeftMotor.changeSpeed(127);
   motorDriver backLeftMotor(true, false);
@@ -186,7 +197,7 @@ void loop()
   }
   
   char isManual = 0;
-  if(isManual == 0)
+  if(isManual == '0')
   {
     while(Serial.available() == 0){}
   }
@@ -210,6 +221,8 @@ void loop()
     speedToChangeTo = Serial.parseInt();
     int incomingByte = Serial.read();
   
+    // This code relates to PID control:
+
     // This code only allows the motors to go forwards and backwards at the moment
     setPointLF = speedToChangeTo;
     setPointLB = speedToChangeTo;
@@ -257,19 +270,15 @@ void loop()
     switch(motorToChange)
     {
       case '1':
-        Serial.println("Front Left motor");
         switch(functionToCall)
         {
           case '1':
-            Serial.println("Case 1 - 1");
             frontLeftMotor.moveForeward();
             break;
           case '2':
-            Serial.println("Case 1 - 2");
             frontLeftMotor.moveBackward();
             break;
           case '3':
-            Serial.println("Case 1 - 3");
             frontLeftMotor.changeSpeed(speedToChangeTo);
             break;
           default:
@@ -277,19 +286,15 @@ void loop()
         }
         break;
       case '2':
-        Serial.println("Front Right motor");
         switch(functionToCall)
         {
           case '1':
-            Serial.println("Case 2 - 1");
             frontRightMotor.moveForeward();
             break;
           case '2':
-            Serial.println("Case 2 - 2");
             frontRightMotor.moveBackward();
             break;
           case '3':
-            Serial.println("Case 2 - 3");
             frontRightMotor.changeSpeed(speedToChangeTo);
             break;
           default:
@@ -297,19 +302,15 @@ void loop()
         }
         break;
       case '3':
-        Serial.println("Back Left motor");
         switch(functionToCall)
         {
           case '1':
-            Serial.println("Case 3 - 1");
             backLeftMotor.moveForeward();
             break;
           case '2':
-            Serial.println("Case 3 - 2");
             backLeftMotor.moveBackward();
             break;
           case '3':
-            Serial.println("Case 3 - 3");
             backLeftMotor.changeSpeed(speedToChangeTo);
             break;
           default:
@@ -317,19 +318,15 @@ void loop()
         }
         break;
       case '4':
-        Serial.println("Back Right motor");
         switch(functionToCall)
         {
           case '1':
-            Serial.println("Case 4 - 1");
             backRightMotor.moveForeward();
             break;
           case '2':
-            Serial.println("Case 4 - 2");
             backRightMotor.moveBackward();
             break;
           case '3':
-            Serial.println("Case 4 - 3");
             backRightMotor.changeSpeed(speedToChangeTo);
             break;
           default:
@@ -342,6 +339,10 @@ void loop()
   }
 }
 
+/* 
+ *These functions are attached to the interruprs to determine 
+ *whether the motor is moving clockwise or counter clockwise 
+ */
 void updateEncoderCount1()
 {
   if(digitalRead(ENCODER1) == HIGH)
