@@ -34,7 +34,7 @@ if(BUILD_TESTING)
 endif()
 
 install(
-	PROGRAMS scripts/movement.py
+	PROGRAMS scripts/movement.py scripts/cmd_vel_reader.py
 	DESTINATION lib/${PROJECT_NAME}
 )
 

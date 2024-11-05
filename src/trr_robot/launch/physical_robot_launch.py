@@ -27,7 +27,8 @@ def generate_launch_description():
     twist_mux = Node(
             package="twist_mux",
             executable="twist_mux",
-            parameters=[twist_mux_params]
+            parameters=[twist_mux_params],
+            remappings=[('/cmd_vel_out','/diff_cont/cmd_vel_unstamped')]
         )
 
     
@@ -35,7 +36,7 @@ def generate_launch_description():
 
     robot_description = Command(['ros2 param get --hide-type /robot_state_publisher robot_description'])
 
-    controller_params_file = os.path.join(get_package_share_directory(package_name),'config','my_controllers.yaml')
+    controller_params_file = os.path.join(get_package_share_directory(package_name),'config','controllers.yaml')
 
     controller_manager = Node(
         package="controller_manager",
@@ -48,8 +49,9 @@ def generate_launch_description():
 
     diff_drive_spawner = Node(
         package="controller_manager",
-        executable="spawner.py",
-        arguments=["diff_cont"],
+        executable="spawner",
+        name="diff_drive_node",
+        arguments=["diff_cont", "-c", "/controller_manager"],
     )
 
     delayed_diff_drive_spawner = RegisterEventHandler(
@@ -59,6 +61,22 @@ def generate_launch_description():
         )
     )
 
+    joint_broad_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        name="joint_broad_node",
+        arguments=["joint_broad", "--controller-manager", "/controller_manager"],
+    )
+
+    delayed_joint_broad_spawner = RegisterEventHandler(
+        event_handler=OnProcessStart(
+            target_action=controller_manager,
+            on_start=[joint_broad_spawner],
+        )
+    )
+
+    
+
     # Launch them all!
     return LaunchDescription([
         rsp,
@@ -66,4 +84,5 @@ def generate_launch_description():
         twist_mux,
         delayed_controller_manager,
         delayed_diff_drive_spawner,
+        delayed_joint_broad_spawner
     ])
