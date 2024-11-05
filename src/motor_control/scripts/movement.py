@@ -7,6 +7,7 @@ import rclpy
 from rclpy.node import Node
 import serial
 from std_msgs.msg import String
+from geometry_msgs.msg import Twist
 import time
 
 comLine = serial.Serial('/dev/ttyUSB0', 9600) # Change when device is connected
