@@ -23,7 +23,7 @@ PID leftBackPID(&inputLB, &outputLB, &setPointLB, kpLB, kiLB, kdLB, DIRECT);
 PID rightFrontPID(&inputRF, &outputRF, &setPointRF, kpRF, kiRF, kdRF, DIRECT);
 PID rightBackPID(&inputRB, &outputRB, &setPointRB, kpRB, kiRB, kdRB, DIRECT);
 
-void getMotorValues(int& motorArray);
+void getMotorValues(int* motorPointer, String motorValString);
 void sendEncoderValues();
 void updateEncoderCount1();
 void updateEncoderCount2();
@@ -167,7 +167,8 @@ void loop()
   motorDriver frontRightMotor(false, true);
   motorDriver backRightMotor(false, false);
 
-  int motorVelocities[4] {0};
+  int motorVelocities[2] {0};
+  int* motorVelPointer = motorVelocities;
   
   // Constantly check the interrupts
   if(interruptFlag == true)
@@ -179,50 +180,24 @@ void loop()
   }
   else
   {
-    Serial.println("In\n");
+    // Wait for an input
     while(Serial.available() == 0){}
-    char mode = Serial.read();
-    Serial.println("Mode: ");
-    Serial.print(mode);
+    String input = Serial.readString();
+
+    // The controller messages will be of form e or m so determine which one to use
+    char mode = input[0];
     if(mode == 'm')
     {
-      // Get motor speeds
-      int motorCount = 0;
-      String valueAsString = "";
-    
-      char currentChar = Serial.read();
-      if(!isSpace(currentChar))
-      {
-        Serial.print("In\n");
-        // Once past the space between m and val1 start reading val 1
-        while(!isSpace(currentChar))
-        {
-          valueAsString += currentChar;
-          currentChar += Serial.read();
-        }
-        Serial.println(valueAsString);
-        motorVelocities[motorCount] = valueAsString.toInt();
-        motorCount++;
-    
-        // Should be one space between val1 and val2 
-        currentChar = Serial.read();
-    
-        // Read val2 between the last space and eoc
-        while(!isSpace(currentChar) && Serial.available() > 0)
-        {
-          valueAsString += currentChar;
-          currentChar += Serial.read();
-        }
-        motorVelocities[motorCount] = valueAsString.toInt();
-        motorCount++;
-      }
-      Serial.print(motorVelocities[0]);
+      input.remove(0, 2); // Remove the mode and space that follows
+
+      //Get the motor values
+      getMotorValues(motorVelPointer, input);
       
       // Set the motor speeds
       frontLeftMotor.move(motorVelocities[0]);
-      backLeftMotor.move(motorVelocities[1]);
-      frontRightMotor.move(motorVelocities[2]);
-      backRightMotor.move(motorVelocities[3]);
+      backLeftMotor.move(motorVelocities[0]);
+      frontRightMotor.move(motorVelocities[1]);
+      backRightMotor.move(motorVelocities[1]);
     }
     else if(mode == 'e')
     {
@@ -235,65 +210,25 @@ void loop()
   }
 }
 
-void getMotorValues(int& motorArray)
+void getMotorValues(int* motorPointer, String motorValString)
 {
-  int motorCount = 0;
-  String valueAsString = "";
-
-  char currentChar = Serial.read();
-  if(!isSpace(currentChar))
+  // Iterate through the two motor velocities
+  for(int motorCount = 0; motorCount < 2; motorCount++)
   {
-    // Once past the space between m and val1 start reading val 1
-    while(!isSpace(currentChar))
+    int stringIndex = 0;
+    String motorValAsString = "";
+    
+    // Loop until it sees the next space
+    while(!isSpace(motorValString[stringIndex]))
     {
-      valueAsString += currentChar;
-      currentChar += Serial.read();
+      motorValAsString += motorValString[stringIndex];
+      stringIndex++;
     }
-    int currentVal = motorArray + motorCount;
-    currentVal = valueAsString.toInt();
-    motorCount++;
-
-    // Should be one space between val1 and val2 
-    currentChar = Serial.read();
-
-    // Read val2 between the last space and eoc
-    while(!isSpace(currentChar) && Serial.available() > 0)
-    {
-      valueAsString += currentChar;
-      currentChar += Serial.read();
-    }
-    currentVal = motorArray + motorCount;
-    currentVal = valueAsString.toInt();
-    motorCount++;
+    // Assign the value (as an int) to the buffer location
+    *(motorPointer + motorCount) = motorValAsString.toInt();
   }
 
-  //Do it again but for the second motor value
-//  while(Serial.available() == 0){}
-//  secondControllerVelocities = Serial.readString();
-//
-//  // Iterate through the string provided by diffdrive_arduino
-//  for(int i=0; i < secondControllerVelocities.length(); i++ ) 
-//  {
-//    char currentChar = secondControllerVelocities[i];
-//    String valueAsString;
-//    // The string provided by diffdrive_arduino will be in the format: "m val1 val2\r\n" so grab the values after each space
-//    if(isSpace(currentChar))
-//    {
-//      // Go to next char to enter while loop
-//      i++;
-//      do
-//      {
-//        currentChar = secondControllerVelocities[i];
-//        valueAsString += currentChar;
-//        i++;
-//      }
-//      while(!isSpace(currentChar));
-//
-//      // Convert the value to an int, append it to the array, and increment the motor counter
-//      motorArray[motorCount] = valueAsString.toInt();
-//      motorCount++;
-//    }
-//  }
+  // Response message to controller manager
   Serial.println("OK");
 }
 
