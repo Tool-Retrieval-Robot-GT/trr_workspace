@@ -9,9 +9,9 @@
     <xacro:if value="$(arg use_ros2_control)">
         <xacro:include filename="ros2_control.xacro" />
     </xacro:if>
-    <!-- <xacro:unless value="$(arg use_ros2_control)">
+    <xacro:unless value="$(arg use_ros2_control)">
         <xacro:include filename="gz.xacro" />
-    </xacro:unless> -->
+    </xacro:unless>
     <!-- <xacro:include filename="lidar.xacro" />
     <xacro:include filename="camera.xacro" /> -->
     <!-- <xacro:include filename="depth_camera.xacro" /> -->

@@ -11,8 +11,9 @@
             <param name="device">/dev/ttyUSB0</param>
             <param name="baud_rate">57600</param>
             <param name="timeout_ms">1000</param>
-            <param name="enc_counts_per_rev">3436</param>
+            <param name="enc_counts_per_rev">64</param>
         </hardware>
+         <!-- Front wheels -->
         <joint name="drivewhl_fl_wheel">
             <command_interface name="velocity">
                 <param name="min">-10</param>
@@ -21,14 +22,6 @@
             <state_interface name="position"/>
             <state_interface name="velocity"/>
         </joint>
-        <!-- <joint name="bottom_left_joint">
-            <command_interface name="velocity">
-                <param name="min">-10</param>
-                <param name="max">10</param>
-            </command_interface>
-            <state_interface name="velocity"/>
-            <state_interface name="position"/>
-        </joint> -->
         <joint name="drivewhl_fr_wheel">
             <command_interface name="velocity">
                 <param name="min">-10</param>
@@ -37,13 +30,22 @@
             <state_interface name="position"/>
             <state_interface name="velocity"/>
         </joint>
-        <!-- <joint name="bottom_right_joint">
+         <!-- Back wheels -->
+         <!-- <joint name="drivewhl_bl_wheel">
             <command_interface name="velocity">
                 <param name="min">-10</param>
                 <param name="max">10</param>
             </command_interface>
-            <state_interface name="velocity"/>
             <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="drivewhl_br_wheel">
+            <command_interface name="velocity">
+                <param name="min">-10</param>
+                <param name="max">10</param>
+            </command_interface>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
         </joint> -->
     </ros2_control>
 </robot>
