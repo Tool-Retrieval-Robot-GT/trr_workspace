@@ -4,7 +4,6 @@
 // Declare the motor driver pins
 constexpr int INA1 = A0, INA2 = A1, PWMA = 5, INB1 = 4, INB2 = 7, PWMB = 6;
 constexpr int INA3 = 8, INA4 = 12, PWMC = 9, INB3 = 10, INB4 = 13, PWMD = 11;
-constexpr int PIDINL, PIDINR, PIDOUTL, PIDOUTR;
 
 // Get the Encoder inputs
 constexpr int ENCODER1, ENCODER2, ENCODER3, ENCODER4, ENCODER5, ENCODER6, ENCODER7, ENCODER8; // Assign pins when found
@@ -13,16 +12,25 @@ constexpr int ENCODER1, ENCODER2, ENCODER3, ENCODER4, ENCODER5, ENCODER6, ENCODE
 volatile bool interruptFlag = false;
 volatile int frontLeftEncoderCount = 0, backLeftEncoderCount = 0, frontRightEncoderCount = 0, backRightEncoderCount = 0;
 
-int encoderValues[4], lastEncoderCount[4];
+int lastEncoderCount[4];
 unsigned long lastTimes[4];
 
 bool usePID = true, encoderReset = false;
 
 // Parameters for the PID:
-double setPointLF, inputLF, outputLF, setPointLB, inputLB, outputLB; // Left two motors
-double setPointRF, inputRF, outputRF, setPointRB, inputRB, outputRB; // Right two motors
-double kpLF = 2, kiLF = 5, kdLF = 1, kpLB = 2, kiLB = 5, kdLB = 1;
-double kpRF = 2, kiRF = 5, kdRF = 1, kpRB = 2, kiRB = 5, kdRB = 1;
+// Left two motors:
+double setPointLF, inputLF, outputLF;
+double setPointLB, inputLB, outputLB;
+
+// Right two motors:
+double setPointRF, inputRF, outputRF;
+double setPointRB, inputRB, outputRB;
+
+//PID control parameters: 
+double kpLF = 2, kiLF = 1, kdLF = 1;
+double kpLB = 2, kiLB = 1, kdLB = 1;
+double kpRF = 2, kiRF = 1, kdRF = 1;
+double kpRB = 2, kiRB = 1, kdRB = 1;
 
 PID leftFrontPID(&inputLF, &outputLF, &setPointLF, kpLF, kiLF, kdLF, DIRECT);
 PID leftBackPID(&inputLB, &outputLB, &setPointLB, kpLB, kiLB, kdLB, DIRECT);
@@ -45,9 +53,9 @@ void fault_detected()
 class motorDriver
 {
   int in1, in2, pwm = 127;
+  
 public:
   bool needReset = false;
-  int encoderCount;
   motorDriver(bool isLeftSide, bool isTopMotor)
   {
     // Determines if it is talking to the left motor controller or the right one
@@ -150,14 +158,11 @@ void setup()
   pinMode(ENCODER7, INPUT);
   pinMode(ENCODER8, INPUT);
 
-  setPointLF = 100;
-  setPointLB = 100;
-  setPointRF = 100;
-  setPointRB = 100;
   leftFrontPID.SetMode(AUTOMATIC);
   leftBackPID.SetMode(AUTOMATIC);
   rightFrontPID.SetMode(AUTOMATIC);
   rightBackPID.SetMode(AUTOMATIC);
+  
   attachInterrupt(ENCODER1, updatefrontLeftEncoderCount, RISING);
   attachInterrupt(ENCODER3, updatebackLeftEncoderCount, RISING);
   attachInterrupt(ENCODER5, updatefrontRightEncoderCount, RISING);
@@ -232,7 +237,9 @@ void loop()
     if(usePID == false)
     {
       // Turn PID off
+      setPointLF = 0;
       setPointLB = 0;
+      setPointRF = 0;
       setPointRB = 0;
       
       // Manually set the motor speeds
@@ -245,14 +252,14 @@ void loop()
     else
     {
       int changeInEncoder[4];
-      if(encoderReset = true)
+
+      // If ROS2 calls for a reset then there's no need to compute the difference 
+      if(encoderReset == false)
       {
         changeInEncoder[0] = (frontLeftEncoderCount - lastEncoderCount[0]);
         changeInEncoder[1] = (frontRightEncoderCount - lastEncoderCount[1]);
         changeInEncoder[2] = (backLeftEncoderCount - lastEncoderCount[2]);
         changeInEncoder[3] = (backRightEncoderCount - lastEncoderCount[3]);
-
-        encoderReset = false;
       }
       else
       {
@@ -260,6 +267,8 @@ void loop()
         changeInEncoder[1] = frontRightEncoderCount;
         changeInEncoder[2] = backLeftEncoderCount;
         changeInEncoder[3] = backRightEncoderCount;
+
+        encoderReset = true;
       }
       
       // Setpoint provided by ros_arduino_bridge is in ticks/second so the input to the PID must be the same
@@ -279,11 +288,13 @@ void loop()
       lastTimes[3] = millis();
       lastEncoderCount[3] = frontLeftEncoderCount;
 
+      // Compute the new PWM frequency
       leftFrontPID.Compute();
       leftBackPID.Compute();
       rightFrontPID.Compute();
       rightBackPID.Compute();
 
+      // Set the new PWM frequency
       frontLeftMotor.move(outputLF);
       frontRightMotor.move(outputRF);
       backLeftMotor.move(outputLB);
