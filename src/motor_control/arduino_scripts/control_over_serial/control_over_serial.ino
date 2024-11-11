@@ -6,7 +6,7 @@ constexpr int INA1 = A0, INA2 = A1, PWMA = 5, INB1 = 4, INB2 = 7, PWMB = 6;
 constexpr int INA3 = 8, INA4 = 12, PWMC = 9, INB3 = 10, INB4 = 13, PWMD = 11;
 
 // Get the Encoder inputs
-constexpr int ENCODER1, ENCODER2, ENCODER3, ENCODER4, ENCODER5, ENCODER6, ENCODER7, ENCODER8; // Assign pins when found
+constexpr int ENCODER1 = 2, ENCODER2 = 3, ENCODER3, ENCODER4, ENCODER5, ENCODER6, ENCODER7, ENCODER8; // Assign pins when found
 
 // Volatiles
 volatile bool interruptFlag = false;
@@ -163,9 +163,9 @@ void setup()
   rightFrontPID.SetMode(AUTOMATIC);
   rightBackPID.SetMode(AUTOMATIC);
   
-  attachInterrupt(ENCODER1, updatefrontLeftEncoderCount, RISING);
+  attachInterrupt(ENCODER1, updatefrontRightEncoderCount, RISING);
   attachInterrupt(ENCODER3, updatebackLeftEncoderCount, RISING);
-  attachInterrupt(ENCODER5, updatefrontRightEncoderCount, RISING);
+  attachInterrupt(ENCODER5, updatefrontLeftEncoderCount, RISING);
   attachInterrupt(ENCODER7, updatebackRightEncoderCount, RISING);
 
   // Assign start time for each encoder
