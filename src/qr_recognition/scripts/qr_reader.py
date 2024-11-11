@@ -16,6 +16,11 @@ class QRReader(Node):
         if not (self.capture.isOpened()):
             self.get_logger().info('Could not open camera')
 
+        # Get camera width and height
+        self.cameraWidth = int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.cameraHeight = int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.cameraCenter = [self.cameraWidth / 2, self.cameraHeight / 2]
+
         #Create a bridge to allow images to go between cv2 and ROS
         self.bridge = CvBridge()
 
