@@ -196,42 +196,44 @@ void loop()
   }
   else
   {
-    // Wait for an input
-    while(Serial.available() == 0){}
-    String input = Serial.readString();
-
-    // The controller messages will be of form e or m so determine which one to use
-    char mode = input[0];
-    switch(mode)
+    // if input is received handle it
+    if(Serial.available() > 0)
     {
-      case('m'):
-        usePID = true; // Let PID do the work
-        input.remove(0, 2);
-        setSetPoints(input);
-        break;
+      String input = Serial.readString();
+    
+      // The controller messages will be of form e or m so determine which one to use
+      char mode = input[0];
+      switch(mode)
+      {
+        case('m'):
+          usePID = true; // Let PID do the work
+          input.remove(0, 2);
+          setSetPoints(input);
+          break;
+          
+        case('o'):
+          usePID = false; // Want to set the PWM manually
+          input.remove(0, 2); // Remove the mode and space that follows
+  
+          //Get the motor values
+          getMotorValues(motorVelPointer, input);
+          
+          break;
+          
+        case('e'):
+          sendEncoderValues();
+          break;
         
-      case('o'):
-        usePID = false; // Want to set the PWM manually
-        input.remove(0, 2); // Remove the mode and space that follows
-
-        //Get the motor values
-        getMotorValues(motorVelPointer, input);
-        
-        break;
-        
-      case('e'):
-        sendEncoderValues();
-        break;
-      
-      case('r'):
-        frontLeftEncoderCount = 0;
-        backLeftEncoderCount = 0;
-        frontRightEncoderCount = 0;
-        backRightEncoderCount = 0;
-        break;
-
-      default:
-        Serial.println("Invalid Input");
+        case('r'):
+          frontLeftEncoderCount = 0;
+          backLeftEncoderCount = 0;
+          frontRightEncoderCount = 0;
+          backRightEncoderCount = 0;
+          break;
+  
+        default:
+          Serial.println("Invalid Input");
+      }
     }
 
     if(usePID == false)
@@ -247,7 +249,6 @@ void loop()
       backLeftMotor.move(motorVelocities[0]);
       frontRightMotor.move(motorVelocities[1]);
       backRightMotor.move(motorVelocities[1]);
-      delay(10); //Drive for 10 ms as that's the time between nav2 messages
     }
     else
     {
@@ -268,7 +269,7 @@ void loop()
         changeInEncoder[2] = backLeftEncoderCount;
         changeInEncoder[3] = backRightEncoderCount;
 
-        encoderReset = true;
+        encoderReset = false;
       }
       
       // Setpoint provided by ros_arduino_bridge is in ticks/second so the input to the PID must be the same
