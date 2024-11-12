@@ -6,7 +6,14 @@ constexpr int INA1 = A0, INA2 = A1, PWMA = 5, INB1 = 4, INB2 = 7, PWMB = 6;
 constexpr int INA3 = 8, INA4 = 12, PWMC = 9, INB3 = 10, INB4 = 13, PWMD = 11;
 
 // Get the Encoder inputs
-constexpr int ENCODER1 = 2, ENCODER2 = 3, ENCODER3, ENCODER4, ENCODER5, ENCODER6, ENCODER7, ENCODER8; // Assign pins when found
+// Front Left:
+constexpr int ENCODER1, ENCODER2;
+// Back Left
+constexpr int ENCODER3 = 2, ENCODER4 = 3;
+// Front Right:
+constexpr int ENCODER5, ENCODER6;
+// Back Right
+constexpr int ENCODER7 = 17, ENCODER8 = 18;
 
 // Volatiles
 volatile bool interruptFlag = false;
@@ -118,6 +125,8 @@ public:
       digitalWrite(in2, 1);
       analogWrite(pwm, abs(velocity));
     }
+
+    delay(10);
   }
 
   inline void stopMotor()
@@ -163,9 +172,9 @@ void setup()
   rightFrontPID.SetMode(AUTOMATIC);
   rightBackPID.SetMode(AUTOMATIC);
   
-  attachInterrupt(ENCODER1, updatefrontRightEncoderCount, RISING);
+  attachInterrupt(ENCODER1, updatefrontLeftEncoderCount, RISING);
   attachInterrupt(ENCODER3, updatebackLeftEncoderCount, RISING);
-  attachInterrupt(ENCODER5, updatefrontLeftEncoderCount, RISING);
+  attachInterrupt(ENCODER5, updatefrontRightEncoderCount, RISING);
   attachInterrupt(ENCODER7, updatebackRightEncoderCount, RISING);
 
   // Assign start time for each encoder
@@ -294,6 +303,8 @@ void loop()
       leftBackPID.Compute();
       rightFrontPID.Compute();
       rightBackPID.Compute();
+
+      Serial.println(outputRF);
 
       // Set the new PWM frequency
       frontLeftMotor.move(outputLF);
