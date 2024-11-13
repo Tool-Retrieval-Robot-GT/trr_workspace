@@ -23,6 +23,8 @@ int lastEncoderCount[4];
 unsigned long lastTimes[4];
 
 bool usePID = true, encoderReset = false;
+int motorVelocities[2] {0};
+int* motorVelPointer = motorVelocities;
 
 // Parameters for the PID:
 // Left two motors:
@@ -191,9 +193,6 @@ void loop()
   motorDriver backLeftMotor(true, false);
   motorDriver frontRightMotor(false, true);
   motorDriver backRightMotor(false, false);
-
-  int motorVelocities[2] {0};
-  int* motorVelPointer = motorVelocities;
   
   // Constantly check the interrupts
   if(interruptFlag == true)
@@ -252,6 +251,8 @@ void loop()
       setPointLB = 0;
       setPointRF = 0;
       setPointRB = 0;
+
+      Serial.print(motorVelocities[0]);
       
       // Manually set the motor speeds
       frontLeftMotor.move(motorVelocities[0]);
