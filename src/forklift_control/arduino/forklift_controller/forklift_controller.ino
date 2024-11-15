@@ -15,9 +15,10 @@ int encoderCount = 0;             // Encoder count
 int bottomToTop = -1;             // Number of encoder ticks from bottom to top of forklift. Gets set after homing.
 
 void updateEncoderCount();
+void homingProcedure();
+void toPos();
 void topReached();
 void bottomReached();
-void homingProcedure();
 
 // Setup before main loop.
 void setup() {
