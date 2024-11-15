@@ -284,6 +284,12 @@ void loop()
       backLeftMotor.move(outputLB);
       backRightMotor.move(outputRB);
     }
+
+    Serial.println("Velocity: ");
+    Serial.println(motorVelocities[1]);
+    Serial.println("Output: ");
+    Serial.println(outputRF);
+    Serial.print("\n");
   }
 
   // When the input gets sent:
