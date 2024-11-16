@@ -39,7 +39,13 @@ class QRReader(Node):
         self.get_logger().info('Getting frame')
         currentImage = self.bridge.imgmsg_to_cv2(data) # Converts the ros2 image to an opencv image
         self.decodeMsg = decode(currentImage) # Decodes the image
-        print (self.decodeMsg)
+
+        # Store the QR information:
+        self.QRLeftCorner = self.decodeMsg.rect[0]
+        self.QRTopCorner = self.decodeMsg.rect[1]
+        self.QRWidth = self.decodeMsg.rect[2]
+        self.QRHeight = self.decodeMsg.rect[3]
+
         cv2.imshow("Camera", currentImage)
         cv2.waitKey(3)
 
@@ -50,6 +56,14 @@ class QRReader(Node):
         if ret == True:
             self.publisher.publish(self.bridge.cv2_to_imgmsg(frame))
         self.get_logger().info('Publishing frame')
+
+    def isQRCodeCentered(self):
+        QRCodeCenter = [self.QRWidth / 2, self.QRHeight / 2]
+
+        if(self.cameraCenter[0] == QRCodeCenter[0] and self.cameraCenter[1] == QRCodeCenter[1]):
+            return True
+        else:
+            return False
 
 def main(args=None):
     rclpy.init(args=args)
