@@ -4,11 +4,12 @@
 
 // Left BACKLEFTPWM =3 , LEFT FRONTLEFTPWM = 10, RIGHT FRONTLEFTINPUT1 = 2, 
 
-// Declare the motor driver pins
-constexpr int BACKLEFTINPUT1 = A0, BACKLEFTINPUT2 = A1, BACKLEFTPWM = 3;
-constexpr int FRONTLEFTINPUT1 = 4, FRONTLEFTINPUT2 = 7, FRONTLEFTPWM = 10;
-constexpr int FRONTRIGHTINPUT1 = 8, FRONTRIGHTINPUT2 = 12, FRONTRIGHTPWM = 9;
-constexpr int BACKRIGHTINPUT1 = 2, BACKRIGHTINPUT2 = 13, BACKRIGHTPWM = 11;
+// Declare the motor driver pins 785 436
+constexpr int FRONTLEFTINPUT1 = 4, FRONTLEFTINPUT2 = 3, FRONTLEFTPWM = 6;
+constexpr int BACKLEFTINPUT1 = 7, BACKLEFTINPUT2 = 8, BACKLEFTPWM = 5;
+
+constexpr int FRONTRIGHTINPUT1 = A0, FRONTRIGHTINPUT2 = A1, FRONTRIGHTPWM = 10;
+constexpr int BACKRIGHTINPUT1 = 12, BACKRIGHTINPUT2 = 11, BACKRIGHTPWM = 9;
 
 constexpr int GEARRATIO = 50;
 constexpr int ENCODERTPR = 11;  // Encoders claim to go 11 ticks per rotation with 1 gear
@@ -18,7 +19,7 @@ constexpr int ENCODERTRUETPR = GEARRATIO * ENCODERTPR;  // True ticks per rotati
 // Front Left:
 constexpr int ENCODER1, ENCODER2;
 // Back Left
-constexpr int ENCODER3 = A2, ENCODER4 = A3;
+constexpr int ENCODER3 = A2, ENCODER4 = A6;
 // Front Right:
 constexpr int ENCODER5, ENCODER6;
 // Back Right
@@ -74,16 +75,17 @@ public:
     if(isLeftSide)
     {
       // Determines if it is talking to top motor controller or bottom
+      // Pins are flipped for left side so backwards --> forwards
       if(isTopMotor)
       {
-        in1 = FRONTLEFTINPUT1;
-        in2 = FRONTLEFTINPUT2;
+        in1 = FRONTLEFTINPUT2;
+        in2 = FRONTLEFTINPUT1;
         pwm = FRONTLEFTPWM;
       }
       else
       {
-        in1 = BACKLEFTINPUT1;
-        in2 = BACKLEFTINPUT2;
+        in1 = BACKLEFTINPUT2;
+        in2 = BACKLEFTINPUT1;
         pwm = BACKLEFTPWM;
       }
     }
@@ -94,13 +96,13 @@ public:
       {
         in1 = FRONTRIGHTINPUT1;
         in2 = FRONTRIGHTINPUT2;
-        pwm = BACKRIGHTPWM;
+        pwm = FRONTRIGHTPWM;
       }
       else
       {
         in1 = BACKRIGHTINPUT1;
         in2 = BACKRIGHTINPUT2;
-        pwm = FRONTRIGHTPWM;
+        pwm = BACKRIGHTPWM;
       }
     }
 
@@ -159,6 +161,10 @@ void setup()
   // This code relates to PID control:
   
   // Assign all of the encoder pins as inputs 
+  pinMode(BACKRIGHTINPUT1, OUTPUT);
+  pinMode(BACKRIGHTINPUT2, OUTPUT);
+  pinMode(BACKLEFTINPUT1, OUTPUT);
+  pinMode(BACKLEFTINPUT2, OUTPUT);
   pinMode(ENCODER1, INPUT);
   pinMode(ENCODER2, INPUT);
   pinMode(ENCODER3, INPUT);
@@ -234,9 +240,9 @@ void loop()
       }
       else
       {
-        inputLF = changeInEncoder[0] / ((millis() - lastTimes[0]) * 0.001) / ENCODERTRUETPR;
+        inputLF = changeInEncoder[2] / ((millis() - lastTimes[0]) * 0.001) / ENCODERTRUETPR;
         lastTimes[0] = millis();
-        lastEncoderCount[0] = frontLeftEncoderCount;
+        lastEncoderCount[0] = backLeftEncoderCount;
       }
 
       if(changeInEncoder[1] == 0)
@@ -245,9 +251,9 @@ void loop()
       }
       else
       {
-        inputRF = changeInEncoder[1] / ((millis() - lastTimes[1]) * 0.001) / ENCODERTRUETPR;
+        inputRF = changeInEncoder[3] / ((millis() - lastTimes[1]) * 0.001) / ENCODERTRUETPR;
         lastTimes[1] = millis();
-        lastEncoderCount[1] = frontRightEncoderCount;
+        lastEncoderCount[1] = backRightEncoderCount;
       }
 
       if(changeInEncoder[2] == 0)
@@ -269,8 +275,11 @@ void loop()
       {
         inputRB = changeInEncoder[3] / ((millis() - lastTimes[3]) * 0.001) / ENCODERTRUETPR;
         lastTimes[3] = millis();
-        lastEncoderCount[3] = frontLeftEncoderCount;
+        lastEncoderCount[3] = backRightEncoderCount;
       }
+
+      inputLF = inputLB;
+      inputRF = inputRB;
 
       // Compute the new PWM frequency
       leftFrontPID.Compute();
@@ -285,10 +294,13 @@ void loop()
       backRightMotor.move(outputRB);
     }
 
-    Serial.println("Velocity: ");
-    Serial.println(motorVelocities[1]);
-    Serial.println("Output: ");
+    Serial.println("Encoders: ");
+    Serial.println(backRightEncoderCount);
+    Serial.println("Outputs: ");
+    Serial.println(outputLF);
+    Serial.println(outputLB);
     Serial.println(outputRF);
+    Serial.println(outputRB);
     Serial.print("\n");
   }
 
@@ -424,11 +436,11 @@ void updatefrontRightEncoderCount()
 {
   if(digitalRead(ENCODER5) == HIGH && digitalRead(ENCODER6) == LOW)
   {
-    frontRightEncoderCount++;
+    frontRightEncoderCount--;
   }
   else
   {
-    frontRightEncoderCount--;
+    frontRightEncoderCount++;
   }
 }
 
@@ -436,10 +448,10 @@ void updatebackRightEncoderCount()
 {
   if(digitalRead(ENCODER7) == HIGH && digitalRead(ENCODER8) == LOW)
   {
-    backRightEncoderCount++;
+    backRightEncoderCount--;
   }
   else
   {
-    backRightEncoderCount--;
+    backRightEncoderCount++;
   }
 }
