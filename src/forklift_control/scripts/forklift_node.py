@@ -18,19 +18,21 @@ class fork_control(Node):
         self.get_logger().info(f"Homing forklift")
         data = "h"
         arduino.write(data.encode())
-        while (not arduino.readable()):
-            response = arduino.read().decode()
-            if (response == "done"):
-                self.homed= True
+        while True:
+            response = arduino.readline().decode().strip()
+            if response == "done":
+                self.homed = True
+                self.get_logger().info("Forklift homed successfully.")
                 break
         
     def posProcedure(self, pos):
         self.get_logger().info(f"Setting forklift position to: {pos}")
         data = f"p {pos}"
         arduino.write(data.encode())
-        while (not arduino.readable()):
-            response = arduino.read().decode()
-            if (response == "done"):
+        while True:
+            response = arduino.readline().decode().strip()
+            if response == "done":
+                self.get_logger().info("Forklift moved successfully.")
                 break
 
     def callbackFunc(self, message):
