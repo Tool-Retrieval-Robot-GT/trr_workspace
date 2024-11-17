@@ -4,14 +4,14 @@ constexpr int MOTOROUT = 10;      // Motor PWM out
 constexpr int DIRECTION = 11;     // Direction pin out
 
 constexpr int TOPSWITCH = 5;      // Top sensor switch
-constexpr int BOTTOMSWITCH = 6;  // Bottom sensor switch
+constexpr int BOTTOMSWITCH = 6;   // Bottom sensor switch
 
 constexpr int ENCODER1 = 8;       // First encoder pin
 constexpr int ENCODER2 = 9;       // Second encoder pin
 
 constexpr int MOTORSPEED = 100;   // Set the motor speed
 
-volatile int encoderCount = 0;             // Encoder count
+volatile int encoderCount = 0;    // Encoder count
 int bottomToTop = -1;             // Number of encoder ticks from bottom to top of forklift. Gets set after homing.
 
 void updateEncoderCount();
@@ -41,8 +41,8 @@ void setup() {
 // Main program loop.
 void loop() {
   // Reenabling the end interrupts.
-  //enablePCINT(digitalPinToPCINT(TOPSWITCH));
-  //enablePCINT(digitalPinToPCINT(BOTTOMSWITCH));
+  enablePCINT(digitalPinToPCINT(TOPSWITCH));
+  enablePCINT(digitalPinToPCINT(BOTTOMSWITCH));
 
   // Wait for a serial command.
   digitalWrite(LED_BUILTIN, HIGH);
@@ -69,11 +69,11 @@ void loop() {
     default: 
       break;
   }
+  Serial.println("done");
 }
 
 // Update encoders on interrupt.
 void updateEncoderCount() {
-  //Serial.println(encoderCount);
   // If ENCODER1 is high by the time it gets to ENCODER2 then it's moving clockwise.
   if (digitalRead(ENCODER1) == HIGH && digitalRead(ENCODER2) == LOW) {
     encoderCount++;
@@ -95,8 +95,6 @@ void homingProcedure() {
   analogWrite(MOTOROUT, MOTORSPEED);
   while (digitalRead(TOPSWITCH) == LOW);
   bottomToTop = encoderCount;
-  Serial.println("Bottom to Top");
-  Serial.println(bottomToTop);
 }
 
 // Moves the forklift to specified position.
@@ -109,7 +107,6 @@ void toPos(float val) {
 
   // Calculate the target amount of ticks and move the forks there
   int target = round(bottomToTop * val);
-  Serial.println(target);
   
   int direction = encoderCount < target ? 1 : 0;
   digitalWrite(DIRECTION, direction);
