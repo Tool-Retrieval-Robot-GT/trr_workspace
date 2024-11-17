@@ -5,7 +5,7 @@ from rclpy.node import Node
 from std_msgs.msg import Float32
 import serial
 
-arduino = serial.Serial('/dev/ttyACM0', 9600)
+arduino = serial.Serial('/dev/ttyUSB0', 9600)
 
 class fork_control(Node):
     def __init__(self):
