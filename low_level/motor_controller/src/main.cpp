@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <PinChangeInterrupt.h>
 
 #include "configuration.hpp"
 #include "motor_controller.hpp"
@@ -28,12 +29,8 @@ void left_motor_encoder_ISR(void) { left_motor_encoder.tick_isr(); };
 void right_motor_encoder_ISR(void) { right_motor_encoder.tick_isr(); };
 
 void setup_interrupts(void) {
-    attachInterrupt(digitalPinToInterrupt(GPIO_MOTOR_LEFT_ENCODER_A),
-                    left_motor_encoder_ISR,
-                    RISING);
-    attachInterrupt(digitalPinToInterrupt(GPIO_MOTOR_RIGHT_ENCODER_A),
-                    right_motor_encoder_ISR,
-                    RISING);
+    attachPCINT(digitalPinToPCINT(GPIO_MOTOR_LEFT_ENCODER_A), left_motor_encoder_ISR, RISING);
+    attachPCINT(digitalPinToPCINT(GPIO_MOTOR_RIGHT_ENCODER_A), right_motor_encoder_ISR, RISING);
 }
 
 CmdVel cmd_vel = {0.3, 1.0};
