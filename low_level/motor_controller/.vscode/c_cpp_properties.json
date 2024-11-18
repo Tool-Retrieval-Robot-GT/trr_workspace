@@ -1,0 +1,66 @@
+//
+// !!! WARNING !!! AUTO-GENERATED FILE!
+// PLEASE DO NOT MODIFY IT AND USE "platformio.ini":
+// https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags
+//
+{
+    "configurations": [
+        {
+            "name": "PlatformIO",
+            "includePath": [
+                "/home/barry/trr_workspace/low_level/motor_controller/include",
+                "/home/barry/trr_workspace/low_level/motor_controller/src",
+                "/home/barry/trr_workspace/low_level/motor_controller/.pio/libdeps/nanoatmega328new/PinChangeInterrupt/src",
+                "/home/barry/trr_workspace/low_level/motor_controller/.pio/libdeps/nanoatmega328new/PID/include",
+                "/home/barry/trr_workspace/low_level/motor_controller/.pio/libdeps/nanoatmega328new/PID/src",
+                "/home/barry/trr_workspace/low_level/motor_controller/.pio/libdeps/nanoatmega328new/Timer API/include",
+                "/home/barry/trr_workspace/low_level/motor_controller/.pio/libdeps/nanoatmega328new/Timer API/src",
+                "/home/barry/.platformio/packages/framework-arduino-avr/cores/arduino",
+                "/home/barry/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs",
+                "/home/barry/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                "/home/barry/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                "/home/barry/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                "/home/barry/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                "/home/barry/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                ""
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "/home/barry/trr_workspace/low_level/motor_controller/include",
+                    "/home/barry/trr_workspace/low_level/motor_controller/src",
+                    "/home/barry/trr_workspace/low_level/motor_controller/.pio/libdeps/nanoatmega328new/PinChangeInterrupt/src",
+                    "/home/barry/trr_workspace/low_level/motor_controller/.pio/libdeps/nanoatmega328new/PID/include",
+                    "/home/barry/trr_workspace/low_level/motor_controller/.pio/libdeps/nanoatmega328new/PID/src",
+                    "/home/barry/trr_workspace/low_level/motor_controller/.pio/libdeps/nanoatmega328new/Timer API/include",
+                    "/home/barry/trr_workspace/low_level/motor_controller/.pio/libdeps/nanoatmega328new/Timer API/src",
+                    "/home/barry/.platformio/packages/framework-arduino-avr/cores/arduino",
+                    "/home/barry/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs",
+                    "/home/barry/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                    "/home/barry/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                    "/home/barry/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                    "/home/barry/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                    "/home/barry/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                    ""
+                ]
+            },
+            "defines": [
+                "PLATFORMIO=60116",
+                "ARDUINO_AVR_NANO",
+                "F_CPU=16000000L",
+                "ARDUINO_ARCH_AVR",
+                "ARDUINO=10808",
+                "__AVR_ATmega328P__",
+                ""
+            ],
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++11",
+            "compilerPath": "/home/barry/.platformio/packages/toolchain-atmelavr/bin/avr-gcc",
+            "compilerArgs": [
+                "-mmcu=atmega328p",
+                ""
+            ]
+        }
+    ],
+    "version": 4
+}
