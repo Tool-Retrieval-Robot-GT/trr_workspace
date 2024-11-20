@@ -11,15 +11,15 @@
 #define GPIO_MOTOR_RIGHT_EN         9   // Must be a PWM pin
 #define GPIO_MOTOR_RIGHT_IN1        12
 #define GPIO_MOTOR_RIGHT_IN2        11
-#define GPIO_MOTOR_RIGHT_ENCODER_A  A4  // Must be a hardware interrupt pin
-#define GPIO_MOTOR_RIGHT_ENCODER_B  A5
+#define GPIO_MOTOR_RIGHT_ENCODER_A  3  // Must be a hardware interrupt pin
+#define GPIO_MOTOR_RIGHT_ENCODER_B  4
 
 // GPIO pin configuration for the left motor.
 #define GPIO_MOTOR_LEFT_EN          5   // Must be a PWM pin
 #define GPIO_MOTOR_LEFT_IN1         7
 #define GPIO_MOTOR_LEFT_IN2         8
-#define GPIO_MOTOR_LEFT_ENCODER_A   A2  // Must be a hardware interrupt pin
-#define GPIO_MOTOR_LEFT_ENCODER_B   A6
+#define GPIO_MOTOR_LEFT_ENCODER_A   2  // Must be a hardware interrupt pin
+#define GPIO_MOTOR_LEFT_ENCODER_B   6
 
 // -----------------------------------------------------------------------------
 // ----------------------------| Motor Configuration |--------------------------
