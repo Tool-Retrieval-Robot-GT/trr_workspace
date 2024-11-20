@@ -109,7 +109,7 @@
 
     <!-- ............................ LIDAR ................................... -->
 
-    <link name="lidar">
+    <link name="laser">
         <collision>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <geometry>
@@ -127,9 +127,9 @@
         </visual>
     </link>
 
-    <joint name="lidar_joint" type="fixed">
+    <joint name="laser_joint" type="fixed">
         <parent link="base_link"/>
-        <child link="lidar"/>
+        <child link="laser"/>
         <origin xyz="0.0 0 0.08" rpy="0 0 0" />
     </joint>
 

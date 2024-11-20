@@ -6,6 +6,13 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
+"""
+To save the map:
+
+cd trr_bringup/config
+ros2 run nav2_map_server map_saver_cli -f trr_map
+"""
+
 def generate_launch_description():
     pkg_slam_toolbox_dir = get_package_share_directory('slam_toolbox')
     pkg_trr = get_package_share_directory('trr_bringup')
