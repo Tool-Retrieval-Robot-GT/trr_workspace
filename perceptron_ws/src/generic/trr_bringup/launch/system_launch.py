@@ -46,7 +46,7 @@ def launch_lidar_driver() -> Node:
 def launch_robot_state_publisher() -> Node:
     pkg_trr = get_package_share_directory('trr_bringup')
     robot_desc_path = os.path.join(pkg_trr, 'description', 'trr_robot.xacro')
-    doc = process_file(robot_desc_path, mappings={'use_sim' : 'true'})
+    doc = process_file(robot_desc_path, mappings={'use_sim' : 'False'})
     robot_desc = doc.toprettyxml(indent='  ')
 
     return Node(
