@@ -100,8 +100,8 @@ void homingProcedure() {
 // Moves the forklift to specified position.
 // 1.0: top, 0.5: middle, 0.0: bottom
 void toPos(float val) {
-  // Doesn't run if forklift isn't homed
-  if (bottomToTop == -1) {
+  // Doesn't run if forklift isn't homed or is provided an invalid value
+  if (bottomToTop == -1 || val < 0.0 || val > 1.0) {
     return;
   }
 
