@@ -21,6 +21,19 @@ def generate_launch_description():
             'package_path': pkg_trr, 
         }.items()
     )
+
+    rviz_launch_cmd = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        arguments=[
+            '-d' + os.path.join(
+                get_package_share_directory('nav2_bringup'),
+                'rviz',
+                'nav2_default_view.rviz'
+            )
+        ]
+    )
     
     amcl_node = Node(
         package='nav2_amcl',
@@ -38,17 +51,12 @@ def generate_launch_description():
         parameters=[{'yaml_filename': os.path.join(pkg_trr, 'config', 'trr_map.yaml')}],
     )
 
-    rviz_launch_cmd = Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        arguments=[
-            '-d' + os.path.join(
-                pkg_nav2_dir,
-                'rviz',
-                'nav2_default_view.rviz'
-            )
-        ]
+    static_transform_publisher_node = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='map_to_odom',
+        output='screen',
+        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom']
     )
 
     ld = LaunchDescription()
@@ -57,5 +65,6 @@ def generate_launch_description():
     ld.add_action(rviz_launch_cmd)
     ld.add_action(amcl_node)
     ld.add_action(map_server_node)
+    ld.add_action(static_transform_publisher_node)
 
     return ld
