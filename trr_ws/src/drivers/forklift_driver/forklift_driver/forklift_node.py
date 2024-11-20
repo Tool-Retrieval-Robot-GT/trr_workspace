@@ -5,7 +5,13 @@ from rclpy.node import Node
 from std_msgs.msg import Float32
 import serial
 
-class fork_control(Node):
+class ForkliftNode(Node):
+
+    forklift_position_topic_name = "pos_fork"
+
+    serial_port = "/dev/ttyUSB0"
+    serial_baudrate = 9600
+
     def __init__(self):
         super().__init__("listener")
         
@@ -76,7 +82,7 @@ class fork_control(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    Listener = fork_control()
+    Listener = ForkliftNode()
     rclpy.spin(Listener)
     rclpy.shutdown()
 
