@@ -6,6 +6,7 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from xacro import process_file
 
 def launch_perceptron_driver() -> IncludeLaunchDescription:
     pkg_dir = get_package_share_directory("perceptron_driver")
@@ -42,11 +43,25 @@ def launch_lidar_driver() -> Node:
         parameters=[param_file]
     )
 
+def launch_robot_state_publisher() -> Node:
+    pkg_trr = get_package_share_directory('trr_bringup')
+    robot_desc_path = os.path.join(pkg_trr, 'description', 'trr_robot.xacro')
+    doc = process_file(robot_desc_path, mappings={'use_sim' : 'true'})
+    robot_desc = doc.toprettyxml(indent='  ')
+
+    return Node(
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
+        name="robot_state_publisher",
+        parameters=[{'robot_description': robot_desc}]
+    ) 
+
 def generate_launch_description():
     ld = LaunchDescription()
 
     ld.add_action(launch_perceptron_driver())
     ld.add_action(launch_realsense_driver())
     ld.add_action(launch_lidar_driver())
+    ld.add_action(launch_robot_state_publisher())
 
     return ld
