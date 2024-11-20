@@ -3,6 +3,6 @@ perceptron_driver:
     cmd_vel_topic_name: 'cmd_vel'
     odom_frame_id: 'odom'
     base_link_frame_id: 'base_link'
-    serial_port: '/dev/ttyS1'
+    serial_port: '/dev/ttyUSB0'
     serial_baudrate: 9600
     reset_odom: true
