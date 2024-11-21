@@ -6,13 +6,14 @@
 constexpr int LEFTINPUT1 = 7, LEFTINPUT2 = 8, LEFTPWM = 5;
 constexpr int RIGHTINPUT1 = 12, RIGHTINPUT2 = 11, RIGHTPWM = 9;
 // Encoders:
-constexpr int LEFTENCODERA = 4, LEFTENCODERB = 3;
-constexpr int RIGHTENCODERA = 6, RIGHTENCODERB = 2;
+constexpr int LEFTENCODERA = 6, LEFTENCODERB = 2;
+constexpr int RIGHTENCODERA = 4, RIGHTENCODERB = 3;
 
-// Conversion declerations:
+// Conversions:
 constexpr int GEARRATIO = 50;
 constexpr float WHEELRADIUS = 0.04; // In meters
 constexpr float TICKSPERREV = 11;
+constexpr double GAINFACTOR = 87.39339563;
 float lastTime[2] {0};
 
 // PID Control:
@@ -36,8 +37,8 @@ double setPointLeft = 0, inputLeft = 0, outputLeft = 0;
 double setPointRight = 0, inputRight = 0, outputRight = 0;
 
 //PID control parameters: 
-double kpL = 2, kiL = 0.5, kdL = 0;
-double kpR = 2, kiR = 0.5, kdR = 0;
+double kpL = 1.5, kiL = 1.0, kdL = 0.0;
+double kpR = 1.5, kiR = 1.0, kdR = 0.0;
 
 PID leftPID(&inputLeft, &outputLeft, &setPointLeft, kpL, kiL, kdL, DIRECT);
 PID rightPID(&inputRight, &outputRight, &setPointRight, kpR, kiR, kdR, DIRECT);
@@ -122,12 +123,11 @@ void setup()
   pinMode(RIGHTINPUT2, OUTPUT);
   pinMode(LEFTINPUT1, OUTPUT);
   pinMode(LEFTINPUT2, OUTPUT);
-  pinMode(A1, OUTPUT);
 
   leftPID.SetMode(AUTOMATIC);
   rightPID.SetMode(AUTOMATIC);
-  leftPID.SetSampleTime(PIDINTERVAL);
-  rightPID.SetSampleTime(PIDINTERVAL);
+  //leftPID.SetSampleTime(PIDINTERVAL);
+  //rightPID.SetSampleTime(PIDINTERVAL);
   leftPID.SetOutputLimits(-255, 255);
   rightPID.SetOutputLimits(-255, 255);
 
@@ -247,7 +247,7 @@ void launch(char functionToCall, String ticksPerSecondMotor1 = "", String ticksP
 
 void updatePID()
 {
-  int inputTicksLeft = leftEncoderTicks - lastEncoderTicks[0], inputTicksRight = rightEncoderTicks - lastEncoderTicks[1]; // Difference in encoder ticks
+  float inputTicksLeft = leftEncoderTicks - lastEncoderTicks[0], inputTicksRight = rightEncoderTicks - lastEncoderTicks[1]; // Difference in encoder ticks
   float deltaTLeft = (millis() - lastTime[0]) * 0.001, deltaTRight = (millis() - lastTime[1]) * 0.001; // Want time to be in seconds
   lastTime[0] = millis();
   lastTime[1] = millis();
@@ -256,15 +256,15 @@ void updatePID()
 
   /* To convert encoder ticks to velocity:
    *  
-   *  Change in Ticks    Wheel circumference
-   *  --------------- * ---------------------- * Gear Ratio
-   *  Change in Time     Ticks Per Revolution
+   *  Change in Ticks     Wheel Circumference
+   *  ---------------- * ---------------------- * Gear Ratio
+   *  Change in Time      Ticks Per Revolution
    *  
    */
   if(inputTicksLeft != 0)
   {
-    float velLeft = ((float)inputTicksLeft / deltaTLeft) * (2 * PI / TICKSPERREV) * WHEELRADIUS * GEARRATIO;
-    inputLeft = (velLeft / (GEARRATIO * TICKSPERREV)) / (double)PIDRATE;
+    float velLeft = ((float)inputTicksLeft / (TICKSPERREV * GEARRATIO)) * ((2 * PI* WHEELRADIUS) / deltaTLeft);
+    inputLeft = (double)((velLeft / ((2 * PI) / (GEARRATIO * TICKSPERREV))) / (float)PIDRATE) * GAINFACTOR;
   }
   else
   {
@@ -273,8 +273,8 @@ void updatePID()
 
   if(inputTicksRight != 0)
   {
-    float velRight = ((float)inputTicksRight / deltaTLeft) * (2 * PI / TICKSPERREV) * WHEELRADIUS * GEARRATIO;
-    inputLeft = (velRight / (GEARRATIO * TICKSPERREV)) / (double)PIDRATE;
+    float velRight = ((float)inputTicksRight / (TICKSPERREV * GEARRATIO)) * ((2 * PI* WHEELRADIUS) / deltaTRight);
+    inputRight = (double)((velRight / ((2 * PI) / (GEARRATIO * TICKSPERREV))) / (float)PIDRATE) * GAINFACTOR;
   }
   else
   {
@@ -283,6 +283,18 @@ void updatePID()
 
   leftPID.Compute();
   rightPID.Compute();
+
+  Serial.println("Outputs Before Gain: ");
+  Serial.println(outputLeft);
+  Serial.println(outputRight);
+  
+  Serial.println("Inputs: ");
+  Serial.println(inputLeft);
+  Serial.println(inputRight);
+
+  Serial.println("Setpoints: ");
+  Serial.println(setPointLeft);
+  Serial.println(setPointRight);
 
   leftMotor.move(outputLeft);
   rightMotor.move(outputRight);
@@ -293,8 +305,8 @@ void changeSetpoints(String setpoint1Str, String setpoint2Str)
   /*
    * Note: Setpoint appears to be given in units of ((m/s)/rad)/Hz
    */
-  setPointLeft = (double)setpoint1Str.toFloat();
-  setPointRight = (double)setpoint2Str.toFloat();
+  setPointLeft = (double)setpoint1Str.toFloat() * GAINFACTOR;
+  setPointRight = (double)setpoint2Str.toFloat() * GAINFACTOR;
 
   // If the PID set point is to stop the motor then manually stop
   if(setPointLeft == 0 && setPointRight == 0)
