@@ -6,6 +6,7 @@ import cv2
 from sensor_msgs.msg import Image
 from pyzbar.pyzbar import decode
 from geometry_msgs.msg import Twist
+import time
 
 class QRReader(Node):
     def __init__(self):
@@ -32,6 +33,7 @@ class QRReader(Node):
 
         #This subscriber will get the image from the camera
         self.subscription = self.create_subscription(Image, 'frames', self.imgCallback, 10)
+        self.imageFound = False
         self.decodeMsg
         self.subscription
         self.bridge = CvBridge()
@@ -42,11 +44,19 @@ class QRReader(Node):
         currentImage = self.bridge.imgmsg_to_cv2(data) # Converts the ros2 image to an opencv image
         self.decodeMsg = decode(currentImage) # Decodes the image
 
-        # Store the QR information:
-        self.QRLeft = self.decodeMsg.rect[0]
-        self.QRTop = self.decodeMsg.rect[1]
-        self.QRWidth = self.decodeMsg.rect[2]
-        self.QRHeight = self.decodeMsg.rect[3]
+        if(self.decodeMsg):
+            self.imageFound = True
+            # Store the QR information:
+            self.QRLeft = self.decodeMsg.rect[0]
+            self.QRTop = self.decodeMsg.rect[1]
+            self.QRWidth = self.decodeMsg.rect[2]
+            self.QRHeight = self.decodeMsg.rect[3]
+            self.isQRCodeCentered()
+            self.driveToQRCode()
+        elif(not self.decodeMsg and self.imageFound == True):
+            self.imageFound = False
+
+
 
         cv2.imshow("Camera", currentImage)
         cv2.waitKey(3)
@@ -63,6 +73,7 @@ class QRReader(Node):
         QRCodeCenter = [self.QRWidth / 2, self.QRHeight / 2]
 
         # Check if the QR code and camera are centered based on the top left corner of the QR code
+        # If it's not centered then center it
         if(self.QRTop == self.cameraCenter[1] - QRCodeCenter[1] and self.QRLeft == self.cameraCenter[0] - QRCodeCenter[0]):
             return True
         else:
@@ -87,6 +98,15 @@ class QRReader(Node):
                     while(self.QRLeft < leftVal):
                         self.publisher.publish(incrementMsg)
 
+    def driveToQRCode(self):
+        moveForewardMsg = Twist()
+        moveForewardMsg.linear.x = 0.25
+        while(self.QRWidth <=  3 * self.cameraWidth / 4 and self.QRHeight <= 3 * self.cameraHeight / 4):
+            self.publisher.publish(moveForewardMsg)
+        # Once the QR code is taking up most of the frame go foreward an appoximate distance
+        endTime = time.time() + 5 # Run for 5 seconds
+        while(currentTime < endTime):
+            currentTime = time.time()
 def main(args=None):
     rclpy.init(args=args)
     currentReader = QRReader()
