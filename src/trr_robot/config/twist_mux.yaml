@@ -5,7 +5,7 @@ twist_mux:
         topic   : cmd_vel
         timeout : 0.5
         priority: 10
-      # tracker:
-      #   topic   : cmd_vel_tracker
-      #   timeout : 0.5
-      #   priority: 20
+      tracker:
+        topic   : cmd_vel_tracker
+        timeout : 0.5
+        priority: 20
