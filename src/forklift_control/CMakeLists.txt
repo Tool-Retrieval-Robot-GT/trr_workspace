@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(motor_control)
+project(forklift_control)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -34,7 +34,7 @@ if(BUILD_TESTING)
 endif()
 
 install(
-	PROGRAMS scripts/movement.py scripts/cmd_vel_reader.py
+	PROGRAMS scripts/forklift_node.py
 	DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -7,6 +7,7 @@ from sensor_msgs.msg import Image
 from pyzbar.pyzbar import decode
 from geometry_msgs.msg import Twist
 import time
+from std_msgs.msg import Float32
 
 class QRReader(Node):
     def __init__(self):
@@ -28,7 +29,8 @@ class QRReader(Node):
 
         #This publisher will give the data from the image
         #self.publisher = self.create_publisher(Image, 'frames', 10)
-        self.publisher = self.create_publisher(Twist, 'cmd_vel', 10)
+        self.movementPublisher = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.forkliftPublisher = self.create_publisher(Float32, '/fork_pos', 10)
         self.timer = self.create_timer(0.01, self.timerCallback)
 
         #This subscriber will get the image from the camera
@@ -66,7 +68,7 @@ class QRReader(Node):
         ret, frame = self.capture.read()
         #If the camera sees anything it will return true
         if ret == True:
-            self.publisher.publish(self.bridge.cv2_to_imgmsg(frame))
+            self.movementPublisher.publish(self.bridge.cv2_to_imgmsg(frame))
         self.get_logger().info('Publishing frame')
 
     def isQRCodeCentered(self):
@@ -102,11 +104,18 @@ class QRReader(Node):
         moveForewardMsg = Twist()
         moveForewardMsg.linear.x = 0.25
         while(self.QRWidth <=  3 * self.cameraWidth / 4 and self.QRHeight <= 3 * self.cameraHeight / 4):
-            self.publisher.publish(moveForewardMsg)
+            self.movementPublisher.publish(moveForewardMsg)
         # Once the QR code is taking up most of the frame go foreward an appoximate distance
         endTime = time.time() + 5 # Run for 5 seconds
         while(currentTime < endTime):
             currentTime = time.time()
+
+    def controlForkLift(self):
+        forkLiftMsg = Float32()
+        forkLiftMsg.data = 1.0
+        # Raise the bin to max height
+        self.forkliftPublisher.publish(forkLiftMsg)
+
 def main(args=None):
     rclpy.init(args=args)
     currentReader = QRReader()
