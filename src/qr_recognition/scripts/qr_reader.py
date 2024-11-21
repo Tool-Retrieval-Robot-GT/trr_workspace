@@ -5,6 +5,7 @@ from cv_bridge import CvBridge, CvBridgeError
 import cv2
 from sensor_msgs.msg import Image
 from pyzbar.pyzbar import decode
+from geometry_msgs.msg import Twist
 
 class QRReader(Node):
     def __init__(self):
@@ -25,7 +26,8 @@ class QRReader(Node):
         self.bridge = CvBridge()
 
         #This publisher will give the data from the image
-        self.publisher = self.create_publisher(Image, 'frames', 10)
+        #self.publisher = self.create_publisher(Image, 'frames', 10)
+        self.publisher = self.create_publisher(Twist, 'cmd_vel', 10)
         self.timer = self.create_timer(0.01, self.timerCallback)
 
         #This subscriber will get the image from the camera
@@ -41,8 +43,8 @@ class QRReader(Node):
         self.decodeMsg = decode(currentImage) # Decodes the image
 
         # Store the QR information:
-        self.QRLeftCorner = self.decodeMsg.rect[0]
-        self.QRTopCorner = self.decodeMsg.rect[1]
+        self.QRLeft = self.decodeMsg.rect[0]
+        self.QRTop = self.decodeMsg.rect[1]
         self.QRWidth = self.decodeMsg.rect[2]
         self.QRHeight = self.decodeMsg.rect[3]
 
@@ -60,10 +62,30 @@ class QRReader(Node):
     def isQRCodeCentered(self):
         QRCodeCenter = [self.QRWidth / 2, self.QRHeight / 2]
 
-        if(self.cameraCenter[0] == QRCodeCenter[0] and self.cameraCenter[1] == QRCodeCenter[1]):
+        # Check if the QR code and camera are centered based on the top left corner of the QR code
+        if(self.QRTop == self.cameraCenter[1] - QRCodeCenter[1] and self.QRLeft == self.cameraCenter[0] - QRCodeCenter[0]):
             return True
         else:
-            return False
+            # Determine which axis needs to change
+            topVal = self.cameraCenter[1] - QRCodeCenter[1]
+            leftVal = self.cameraCenter[0] - QRCodeCenter[0]
+            incrementMsg = Twist()
+            if(self.QRTop != topVal):
+                if (self.QRTop > topVal):
+                    # Move down
+                elif (self.QRTop < topVal):
+                    # Move down
+            elif(self.QRLeft != leftVal):
+                if(self.QRLeft > leftVal):
+                    # Move left
+                    incrementMsg.linear.x = -0.5
+                    while(self.QRLeft > leftVal):
+                        self.publisher.publish(incrementMsg)
+                elif(self.QRLeft < leftVal):
+                    # Move Right
+                    incrementMsg.linear.x = 0.5
+                    while(self.QRLeft < leftVal):
+                        self.publisher.publish(incrementMsg)
 
 def main(args=None):
     rclpy.init(args=args)
