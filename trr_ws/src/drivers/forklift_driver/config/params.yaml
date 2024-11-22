@@ -1,0 +1,5 @@
+forklift_driver:
+  ros__parameters:
+    forklift_position_topic_name: 'fork_pos'
+    serial_port: '/dev/ttyUSB0'
+    serial_baudrate: 9600

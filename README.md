@@ -1,7 +1,13 @@
-# Tool Retrieval Robot Workspace
+# trr_robot
 
-To start the simulation:
-* Build the workspace with "colcon build"
-* Source the workspace
-* Launch the spawn script in trr_robot_sim
-* Launch the control script in velocity_pub
+### Dependencies
+
+- Ubuntu 22.04
+- ROS Humble
+- PlatformIO (CLI)
+
+## Inspiration
+
+This repository is heavily inspired by <https://github.com/PedroS235/perceptron_bot>
+
+
