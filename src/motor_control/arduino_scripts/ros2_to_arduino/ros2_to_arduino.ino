@@ -6,8 +6,8 @@
 constexpr int LEFTINPUT1 = 7, LEFTINPUT2 = 8, LEFTPWM = 5;
 constexpr int RIGHTINPUT1 = 12, RIGHTINPUT2 = 11, RIGHTPWM = 9;
 // Encoders:
-constexpr int LEFTENCODERA = 6, LEFTENCODERB = 2;
-constexpr int RIGHTENCODERA = 4, RIGHTENCODERB = 3;
+constexpr int LEFTENCODERA = 4, LEFTENCODERB = 3;
+constexpr int RIGHTENCODERA = 6, RIGHTENCODERB = 2;
 
 // Conversions:
 constexpr int GEARRATIO = 50;
