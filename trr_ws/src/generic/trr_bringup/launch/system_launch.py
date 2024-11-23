@@ -9,15 +9,15 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from xacro import process_file
 
 def launch_perceptron_driver() -> IncludeLaunchDescription:
-    pkg_dir = get_package_share_directory("perceptron_driver")
-    params_file = os.path.join(pkg_dir, "config", "params.yaml")
+    pkg_dir = get_package_share_directory("motor_driver")
+    #params_file = os.path.join(pkg_dir, "config", "params.yaml")
     perceptron_driver_pkg_dir = get_package_share_directory(
-        "perceptron_driver"
+        "motor_driver"
     )
     return IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
-                perceptron_driver_pkg_dir, "launch/perceptron_driver_launch.py"
+                perceptron_driver_pkg_dir, "launch/physical_robot_launch.py"
             )
         ),
         launch_arguments={"params_file": params_file}.items(),
