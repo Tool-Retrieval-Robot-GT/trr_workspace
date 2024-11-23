@@ -1,0 +1,17 @@
+[submodule "low_level/diffdrive_arduino"]
+	path = low_level/diffdrive_arduino
+	url = https://github.com/joshnewans/diffdrive_arduino.git
+[submodule "low_level/motor_controller/serial"]
+	path = low_level/motor_controller/serial
+	url = https://github.com/joshnewans/serial.git
+[submodule "trr_ws/src/drivers/motor_driver/serial"]
+	path = trr_ws/src/drivers/motor_driver/serial
+	url = https://github.com/joshnewans/serial.git
+[submodule "trr_ws/src/drivers/motor_driver/--force"]
+	path = trr_ws/src/drivers/motor_driver/--force
+	url = https://github.com/joshnewans/diffdrive_arduino.git
+	branch = humble
+[submodule "diffdrive_arduino"]
+	path = diffdrive_arduino
+	url = https://github.com/joshnewans/diffdrive_arduino.git
+	branch = humble
