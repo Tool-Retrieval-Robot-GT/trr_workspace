@@ -111,6 +111,11 @@ void toPos(float val) {
 
   // Calculate the target amount of ticks and move the forks there
   int target = round(bottomToTop * val);
+
+  // If the current position is within 20 encoder ticks, don't do anything
+  if (abs(encoderCount - target) <= 20) {
+    return;
+  }
   
   int direction = encoderCount < target ? 1 : 0;
   digitalWrite(DIRECTION, direction);
