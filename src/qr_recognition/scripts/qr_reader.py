@@ -25,8 +25,8 @@ class QRReader(Node):
             self.cameraHeight = int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
             self.cameraCenter = [self.cameraWidth / 2, self.cameraHeight / 2]
             self.QRCodeCenter = [0, 0]
-            self.get_logger().info('Got camera information')
-
+            self.get_logger().info('Got camera information:')
+            
         #Create a bridge to allow images to go between cv2 and ROS
         self.bridge = CvBridge()
 
@@ -37,11 +37,13 @@ class QRReader(Node):
         # Timer initializes at zero seconds so it doesn't publish
         self.timeToSend = 0
         self.timer = self.create_timer(self.timeToSend, self.timerCallback)
+        self.get_logger().info('Here 1')
 
         # This subscriber will get the image from the camera
         self.subscription = self.create_subscription(Image, 'frames', self.imgCallback, 10)
+        self.get_logger().info('Here 2')
         self.imageFound = False
-        self.decodeMsg
+        self.decodeMsg = 0
         self.subscription
         self.bridge = CvBridge()
 
@@ -49,14 +51,15 @@ class QRReader(Node):
     def imgCallback(self, data):
         self.get_logger().info('Getting frame')
         currentImage = self.bridge.imgmsg_to_cv2(data) # Converts the ros2 image to an opencv image
-        self.decodeMsg = decode(currentImage) # Decodes the image
+        decodedMsg = decode(currentImage) # Decodes the image
+        self.decodeMsg = decodedMsg
         cv2.imshow("Camera", currentImage)
         cv2.waitKey(3)
 
     # This function will publish the image data to external nodes
     def timerCallback(self):
         ret, frame = self.capture.read()
-        if(ret == True):
+        if(ret == True and self.decodeMsg > 0):
             # Publish the frame for debugging purposes
             self.movementPublisher.publish(self.bridge.cv2_to_imgmsg(frame))
 
@@ -77,11 +80,9 @@ class QRReader(Node):
             if(self.isQRCodeCentered() == True):
                 self.driveToQRCode()
                 self.raiseForkLift()
-
         elif(not self.decodeMsg and self.imageFound == True):
             self.imageFound = False
             self.timeToSend = 0
-
     """
     This function will make adjustments to center the QR code relative to the webcam.
     """
