@@ -80,6 +80,10 @@ void updateEncoderCount() {
   } else {
     encoderCount--;
   }
+
+  if (bottomToTop != -1 && (encoderCount > bottomToTop + 100 || encoderCount < -100)) {
+    analogWrite(MOTOROUT, 0);
+  }
 }
 
 // Runs the homing procedure

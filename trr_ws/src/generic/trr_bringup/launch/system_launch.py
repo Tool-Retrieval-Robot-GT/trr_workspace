@@ -60,7 +60,7 @@ def generate_launch_description():
     ld = LaunchDescription()
 
     ld.add_action(launch_perceptron_driver())
-    ld.add_action(launch_realsense_driver())
+    #ld.add_action(launch_realsense_driver())
     ld.add_action(launch_lidar_driver())
     ld.add_action(launch_robot_state_publisher())
 
