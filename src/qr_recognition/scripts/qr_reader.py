@@ -15,7 +15,13 @@ class QRReader(Node):
         super().__init__('camera')
 
         #Sets the camera to capture from
-        self.capture = cv2.VideoCapture(0)
+        self.get_logger().info('Here')
+        try:
+            self.capture = cv2.VideoCapture(0)
+        except:
+            self.get_logger().info('Could not open camera')
+        
+        self.get_logger().info('Here')
         if not (self.capture.isOpened()):
             self.get_logger().info('Could not open camera')
         else:
@@ -37,11 +43,9 @@ class QRReader(Node):
         # Timer initializes at zero seconds so it doesn't publish
         self.timeToSend = 0
         self.timer = self.create_timer(self.timeToSend, self.timerCallback)
-        self.get_logger().info('Here 1')
 
         # This subscriber will get the image from the camera
         self.subscription = self.create_subscription(Image, 'frames', self.imgCallback, 10)
-        self.get_logger().info('Here 2')
         self.imageFound = False
         self.decodeMsg = 0
         self.subscription
@@ -152,6 +156,7 @@ def main(args=None):
     currentReader = QRReader()
     try:
         rclpy.spin(currentReader)
+        print('Here')
     except:
         currentReader.get_logger().info('Shutting down')
     currentReader.destroy_node()
