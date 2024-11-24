@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from cv_bridge import CvBridge, CvBridgeError
+from cv_bridge import CvBridge
 import cv2
 from sensor_msgs.msg import Image
 from pyzbar.pyzbar import decode
@@ -18,22 +18,27 @@ class QRReader(Node):
         self.capture = cv2.VideoCapture(0)
         if not (self.capture.isOpened()):
             self.get_logger().info('Could not open camera')
-
-        # Get camera width and height
-        self.cameraWidth = int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-        self.cameraHeight = int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.cameraCenter = [self.cameraWidth / 2, self.cameraHeight / 2]
+        else:
+            # Get camera width and height
+            self.get_logger().info('Getting camera information...')
+            self.cameraWidth = int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+            self.cameraHeight = int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            self.cameraCenter = [self.cameraWidth / 2, self.cameraHeight / 2]
+            self.QRCodeCenter = [0, 0]
+            self.get_logger().info('Got camera information')
 
         #Create a bridge to allow images to go between cv2 and ROS
         self.bridge = CvBridge()
 
-        #This publisher will give the data from the image
+        # Publishers to communicate with the appropriate topics as action is required
         #self.publisher = self.create_publisher(Image, 'frames', 10)
         self.movementPublisher = self.create_publisher(Twist, '/cmd_vel', 10)
         self.forkliftPublisher = self.create_publisher(Float32, '/fork_pos', 10)
-        self.timer = self.create_timer(0.01, self.timerCallback)
+        # Timer initializes at zero seconds so it doesn't publish
+        self.timeToSend = 0
+        self.timer = self.create_timer(self.timeToSend, self.timerCallback)
 
-        #This subscriber will get the image from the camera
+        # This subscriber will get the image from the camera
         self.subscription = self.create_subscription(Image, 'frames', self.imgCallback, 10)
         self.imageFound = False
         self.decodeMsg
@@ -45,62 +50,83 @@ class QRReader(Node):
         self.get_logger().info('Getting frame')
         currentImage = self.bridge.imgmsg_to_cv2(data) # Converts the ros2 image to an opencv image
         self.decodeMsg = decode(currentImage) # Decodes the image
-
-        if(self.decodeMsg):
-            self.imageFound = True
-            # Store the QR information:
-            self.QRLeft = self.decodeMsg.rect[0]
-            self.QRTop = self.decodeMsg.rect[1]
-            self.QRWidth = self.decodeMsg.rect[2]
-            self.QRHeight = self.decodeMsg.rect[3]
-            if(self.isQRCodeCentered() == True):
-                self.driveToQRCode()
-                self.raiseForkLift()
-        elif(not self.decodeMsg and self.imageFound == True):
-            self.imageFound = False
+        cv2.imshow("Camera", currentImage)
         cv2.waitKey(3)
 
     # This function will publish the image data to external nodes
     def timerCallback(self):
         ret, frame = self.capture.read()
-        #If the camera sees anything it will return true
-        if ret == True:
+        if(ret == True):
+            # Publish the frame for debugging purposes
             self.movementPublisher.publish(self.bridge.cv2_to_imgmsg(frame))
-        self.get_logger().info('Publishing frame')
 
+            self.imageFound = True
+            self.timeToSend = 0.05 # Send data every half second
+
+            # Store the QR information:
+            QRLeft = self.decodeMsg.rect[0]
+            QRTop = self.decodeMsg.rect[1]
+            QRWidth = self.decodeMsg.rect[2]
+            QRHeight = self.decodeMsg.rect[3]
+
+            # The resulting polygon coordinates are relative to the camera frame
+            # To get the center of the QR code explicitly you need to start from it's bounds and then add the length or width divided by 2 
+            self.QRCodeCenter = [QRLeft + (QRWidth / 2), QRTop + (QRHeight / 2)]
+
+            # Do something with that information
+            if(self.isQRCodeCentered() == True):
+                self.driveToQRCode()
+                self.raiseForkLift()
+
+        elif(not self.decodeMsg and self.imageFound == True):
+            self.imageFound = False
+            self.timeToSend = 0
+
+    """
+    This function will make adjustments to center the QR code relative to the webcam.
+    """
     def isQRCodeCentered(self):
-        QRCodeCenter = [self.QRWidth / 2, self.QRHeight / 2]
-
-        # Check if the QR code and camera are centered based on the top left corner of the QR code
-        # If it's not centered then center it
-        if(self.QRTop == self.cameraCenter[1] - QRCodeCenter[1] and self.QRLeft == self.cameraCenter[0] - QRCodeCenter[0]):
+        # If the QR Code is not centered then center it
+        if(self.cameraCenter[0] == self.QRCodeCenter[0] and self.cameraCenter[1] == self.QRCodeCenter[1]):
             return True
         else:
             # Determine which axis needs to change
-            topVal = self.cameraCenter[1] - QRCodeCenter[1]
-            leftVal = self.cameraCenter[0] - QRCodeCenter[0]
+            topVal = self.cameraCenter[1] - self.QRCodeCenter[1]
+            leftVal = self.cameraCenter[0] - self.QRCodeCenter[0]
+
+            # Messages to publish
             driveMsg = Twist()
             raiseMsg = Float32()
+
+            # Adjust the height of the forklift
             if(self.QRTop != topVal):
-                if (self.QRTop > topVal):
-                    # Move Up
+                if (topVal > 0):
+                    # Move the camera (forklift) up
                     raiseMsg.data = 0.05
                     self.forkliftPublisher.publish(raiseMsg)
-                elif (self.QRTop < topVal):
-                    # Move down
+                elif (topVal < 0):
+                    # Move the camera (forklift) down
                     raiseMsg.data = -0.05
                     self.forkliftPublisher.publish(raiseMsg)
+
+            # Adjust the robot to be more centered
             elif(self.QRLeft != leftVal):
                 if(self.QRLeft > leftVal):
-                    # Move left
-                    driveMsg.linear.x = -0.5
+                    # Move robot left
+                    driveMsg.linear.x = -0.4
                     self.movementPublisher.publish(driveMsg)
                 elif(self.QRLeft < leftVal):
-                    # Move Right
-                    driveMsg.linear.x = 0.5
+                    # Move robot right
+                    driveMsg.linear.x = 0.4
                     self.movementPublisher.publish(driveMsg)
+
+            # Tell the node it isn't centered yet
             return False
 
+    """
+    This function will move the robot closer to the QR Code until it is taking up the majority of the screen
+    in which the robot will begin to move forward a little bit more before stopping.
+    """
     def driveToQRCode(self):
         moveForewardMsg = Twist()
         moveForewardMsg.linear.x = 0.25
@@ -111,9 +137,12 @@ class QRReader(Node):
         while(currentTime < endTime):
             currentTime = time.time()
 
+    """
+    This function will raise the forklift so the bin can be taken away
+    """
     def raiseForkLift(self):
         forkLiftMsg = Float32()
-        forkLiftMsg.data = 1.0
+        forkLiftMsg.data = 0.7
         # Raise the bin to max height
         self.forkliftPublisher.publish(forkLiftMsg)
 
