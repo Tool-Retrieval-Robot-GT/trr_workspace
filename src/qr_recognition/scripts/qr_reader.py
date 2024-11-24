@@ -14,35 +14,36 @@ class QRReader(Node):
         #Name the object
         super().__init__('camera')
 
-        #Sets the camera to capture from
         self.get_logger().info('Here')
+
+        #Sets the camera to capture from
         try:
             self.capture = cv2.VideoCapture(0)
         except:
             self.get_logger().info('Could not open camera')
-        
+
         self.get_logger().info('Here')
-        if not (self.capture.isOpened()):
-            self.get_logger().info('Could not open camera')
-        else:
-            # Get camera width and height
-            self.get_logger().info('Getting camera information...')
-            self.cameraWidth = int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-            self.cameraHeight = int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            self.cameraCenter = [self.cameraWidth / 2, self.cameraHeight / 2]
-            self.QRCodeCenter = [0, 0]
-            self.get_logger().info('Got camera information:')
-            
+
+        # Get camera width and height
+        self.get_logger().info('Getting camera information...')
+        self.cameraWidth = int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.cameraHeight = int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.cameraCenter = [self.cameraWidth / 2, self.cameraHeight / 2]
+        self.QRCodeCenter = [0, 0]
+        self.get_logger().info('Got camera information:')
+
         #Create a bridge to allow images to go between cv2 and ROS
         self.bridge = CvBridge()
 
+        self.get_logger().info('Here')
+
         # Publishers to communicate with the appropriate topics as action is required
-        #self.publisher = self.create_publisher(Image, 'frames', 10)
+        self.publisher = self.create_publisher(Image, 'frames', 10)
         self.movementPublisher = self.create_publisher(Twist, '/cmd_vel', 10)
         self.forkliftPublisher = self.create_publisher(Float32, '/fork_pos', 10)
         # Timer initializes at zero seconds so it doesn't publish
         self.timeToSend = 0
-        self.timer = self.create_timer(self.timeToSend, self.timerCallback)
+        self.timer = self.create_timer(0.05, self.timerCallback)
 
         # This subscriber will get the image from the camera
         self.subscription = self.create_subscription(Image, 'frames', self.imgCallback, 10)
@@ -53,12 +54,14 @@ class QRReader(Node):
 
     # This function reads the image and image data from the camera and decodes it
     def imgCallback(self, data):
+        self.get_logger().info('In function')
         self.get_logger().info('Getting frame')
         currentImage = self.bridge.imgmsg_to_cv2(data) # Converts the ros2 image to an opencv image
         decodedMsg = decode(currentImage) # Decodes the image
         self.decodeMsg = decodedMsg
         cv2.imshow("Camera", currentImage)
         cv2.waitKey(3)
+        self.get_logger().info('Out of function')
 
     # This function will publish the image data to external nodes
     def timerCallback(self):
