@@ -2,33 +2,27 @@
 #include <PID_v1.h>
 #include <PinChangeInterrupt.h>
 
-// Left BACKLEFTPWM =3 , LEFT FRONTLEFTPWM = 10, RIGHT FRONTLEFTINPUT1 = 2, 
-
-// Declare the motor driver pins 785 436
-constexpr int FRONTLEFTINPUT1 = 4, FRONTLEFTINPUT2 = 3, FRONTLEFTPWM = 6;
+// Declare the motor driver pins
+constexpr int FRONTLEFTINPUT1 = 7, FRONTLEFTINPUT2 = 8, FRONTLEFTPWM = 5;
 constexpr int BACKLEFTINPUT1 = 7, BACKLEFTINPUT2 = 8, BACKLEFTPWM = 5;
 
-constexpr int FRONTRIGHTINPUT1 = A0, FRONTRIGHTINPUT2 = A1, FRONTRIGHTPWM = 10;
+constexpr int FRONTRIGHTINPUT1 = 12, FRONTRIGHTINPUT2 = 11, FRONTRIGHTPWM = 9;
 constexpr int BACKRIGHTINPUT1 = 12, BACKRIGHTINPUT2 = 11, BACKRIGHTPWM = 9;
 
-constexpr int GEARRATIO = 50;
-constexpr int ENCODERTPR = 11;  // Encoders claim to go 11 ticks per rotation with 1 gear
-constexpr int ENCODERTRUETPR = GEARRATIO * ENCODERTPR;  // True ticks per rotation is 11 * gears
+// Encoder Uses:
+constexpr int PIDRATE = 30; // In Hz
+const int PIDINTERVAL = 1000 / PIDRATE;
+unsigned long nextPIDInterval = PIDINTERVAL;
 
 // Get the Encoder inputs
-// Front Left:
-constexpr int ENCODER1, ENCODER2;
 // Back Left
-constexpr int ENCODER3 = A2, ENCODER4 = A6;
-// Front Right:
-constexpr int ENCODER5, ENCODER6;
+constexpr int ENCODERABL = 4, ENCODERBBL = 3;
 // Back Right
-constexpr int ENCODER7 = A4, ENCODER8 = A5;
+constexpr int ENCODERABR = 6, ENCODERBBR = 2;
 
 // Encoder Book-keeping:
-int frontLeftEncoderCount = 0, backLeftEncoderCount = 0, frontRightEncoderCount = 0, backRightEncoderCount = 0;
-int lastEncoderCount[4];
-unsigned long lastTimes[4];
+int backLeftEncoderCount = 0, backRightEncoderCount = 0;
+int lastEncoderCount[2];
 
 // PID / Motor Book-keeping:
 bool usePID = true, encoderReset = false;
@@ -36,23 +30,14 @@ int motorVelocities[2] {0};
 int* motorVelPointer = motorVelocities;
 
 // Parameters for the PID:
-// Left two motors:
-double setPointLF = 0, inputLF = 0, outputLF = 0;
 double setPointLB = 0, inputLB = 0, outputLB = 0;
-
-// Right two motors:
-double setPointRF = 0, inputRF = 0, outputRF = 0;
 double setPointRB = 0, inputRB = 0, outputRB = 0;
 
 //PID control parameters: 
-double kpLF = 50, kiLF = 0.5, kdLF = 0.5;
-double kpLB = 50, kiLB = 0.5, kdLB = 0.5;
-double kpRF = 50, kiRF = 0.5, kdRF = 0.5;
-double kpRB = 50, kiRB = 0.5, kdRB = 0.5;
+double kpLB = 5, kiLB = 1, kdLB = 0;
+double kpRB = 5, kiRB = 1, kdRB = 0;
 
-PID leftFrontPID(&inputLF, &outputLF, &setPointLF, kpLF, kiLF, kdLF, DIRECT);
 PID leftBackPID(&inputLB, &outputLB, &setPointLB, kpLB, kiLB, kdLB, DIRECT);
-PID rightFrontPID(&inputRF, &outputRF, &setPointRF, kpRF, kiRF, kdRF, DIRECT);
 PID rightBackPID(&inputRB, &outputRB, &setPointRB, kpRB, kiRB, kdRB, DIRECT);
 
 void getMotorValues(int* motorPointer, String motorValString);
@@ -62,6 +47,8 @@ void updatefrontLeftEncoderCount();
 void updatebackLeftEncoderCount();
 void updatefrontRightEncoderCount();
 void updatebackRightEncoderCount();
+
+char mode, lastMode;
 
 class motorDriver
 {
@@ -126,18 +113,24 @@ public:
   {
     if(velocity > 0)
     {
+      if(velocity > 255)
+      {
+        velocity = 255;
+      }
       digitalWrite(in1, 1);
       digitalWrite(in2, 0);
       analogWrite(pwm, velocity);
     }
     else
     {
+      if(abs(velocity) > 255)
+      {
+        velocity = 255;
+      }
       digitalWrite(in1, 0);
       digitalWrite(in2, 1);
       analogWrite(pwm, abs(velocity));
     }
-
-    delay(10);
   }
 
   inline void stopMotor()
@@ -165,180 +158,157 @@ void setup()
   pinMode(BACKRIGHTINPUT2, OUTPUT);
   pinMode(BACKLEFTINPUT1, OUTPUT);
   pinMode(BACKLEFTINPUT2, OUTPUT);
-  pinMode(ENCODER1, INPUT);
-  pinMode(ENCODER2, INPUT);
-  pinMode(ENCODER3, INPUT);
-  pinMode(ENCODER4, INPUT);
-  pinMode(ENCODER5, INPUT);
-  pinMode(ENCODER6, INPUT);
-  pinMode(ENCODER7, INPUT);
-  pinMode(ENCODER8, INPUT);
+  pinMode(ENCODERABL, INPUT);
+  pinMode(ENCODERBBL, INPUT);
+  pinMode(ENCODERABR, INPUT);
+  pinMode(ENCODERBBR, INPUT);
+  pinMode(A5, OUTPUT);
 
-  leftFrontPID.SetMode(AUTOMATIC);
   leftBackPID.SetMode(AUTOMATIC);
-  rightFrontPID.SetMode(AUTOMATIC);
   rightBackPID.SetMode(AUTOMATIC);
+  //leftBackPID.SetOutputLimits(-255, 255);
+  //rightBackPID.SetOutputLimits(-255, 255);
 
   // Attach digital pins as interrupts to properly read the encoders
-  attachPCINT(digitalPinToPCINT(ENCODER1), updatefrontLeftEncoderCount, RISING);
-  attachPCINT(digitalPinToPCINT(ENCODER3), updatebackLeftEncoderCount, RISING);
-  attachPCINT(digitalPinToPCINT(ENCODER5), updatefrontRightEncoderCount, RISING);
-  attachPCINT(digitalPinToPCINT(ENCODER7), updatebackRightEncoderCount, RISING);
-
-  // Assign start time for each encoder
-  for(int i = 0; i < 4; i++)
-  {
-    lastTimes[i] = millis();
-  }
+  //attachPCINT(digitalPinToPCINT(ENCODERABL), updatebackLeftEncoderCount, RISING);
+  //attachPCINT(digitalPinToPCINT(ENCODERABR), updatebackRightEncoderCount, RISING);
+  attachInterrupt(digitalPinToInterrupt(ENCODERBBL), updatebackLeftEncoderCount, RISING);
+  attachInterrupt(digitalPinToInterrupt(ENCODERBBR), updatebackRightEncoderCount, RISING);
 }
 
 void loop()
 {
   // Keep moving the motors until a command is sent
-  while (Serial.available() == 0)
-  {
-    if(usePID == false)
+  while (Serial.available() > 0)
+  { 
+    // When the input gets sent:
+    String input = Serial.readString();
+  
+    mode = input[0];
+    String tempString = "";
+    tempString += input[0];
+    tempString += input[1];
+    if(tempString.toInt() == 13)
     {
-      // Turn PID off
-      setPointLF = 0;
-      setPointLB = 0;
-      setPointRF = 0;
-      setPointRB = 0;
+      break;
+    }
+    Serial.print(tempString);
+    Serial.println(tempString.toInt());
+    
+    switch(mode)
+    {
+      case('m'):
+        usePID = true; // Let PID do the work
+        input.remove(0, 2);
+        setSetPoints(input);
+        break;
+        
+      case('o'):
+        usePID = false; // Want to set the PWM manually
+        input.remove(0, 2); // Remove the mode and space that follows
+  
+        //Get the motor values
+        getMotorValues(motorVelPointer, input);
+        break;
+        
+      case('e'):
+        sendEncoderValues();
+        break;
       
-      // Manually set the motor speeds
-      frontLeftMotor.move(motorVelocities[0]);
-      backLeftMotor.move(motorVelocities[0]);
-      frontRightMotor.move(motorVelocities[1]);
-      backRightMotor.move(motorVelocities[1]);
+      case('r'):
+        backLeftEncoderCount = 0;
+        backRightEncoderCount = 0;
+  
+        encoderReset = true;
+        break;
+  
+      default:
+        Serial.println("Invalid Command");
+    }
+  }
+
+  if(usePID == false)
+  {
+    // Turn PID off
+    setPointLB = 0;
+    setPointRB = 0;
+    
+    // Manually set the motor speeds
+    frontLeftMotor.move(motorVelocities[0]);
+    backLeftMotor.move(motorVelocities[0]);
+    frontRightMotor.move(motorVelocities[1]);
+    backRightMotor.move(motorVelocities[1]);
+  }
+  else if(millis() > nextPIDInterval);
+  {
+    int changeInEncoder[2];
+
+    // If ROS2 calls for a reset then there's no need to compute the difference 
+    if(encoderReset == false)
+    {
+      changeInEncoder[0] = (backLeftEncoderCount - lastEncoderCount[0]);
+      changeInEncoder[1] = (backRightEncoderCount - lastEncoderCount[1]);
     }
     else
     {
-      int changeInEncoder[4];
-
-      // If ROS2 calls for a reset then there's no need to compute the difference 
-      if(encoderReset == false)
-      {
-        changeInEncoder[0] = (frontLeftEncoderCount - lastEncoderCount[0]);
-        changeInEncoder[1] = (frontRightEncoderCount - lastEncoderCount[1]);
-        changeInEncoder[2] = (backLeftEncoderCount - lastEncoderCount[2]);
-        changeInEncoder[3] = (backRightEncoderCount - lastEncoderCount[3]);
-      }
-      else
-      {
-        changeInEncoder[0] = frontLeftEncoderCount;
-        changeInEncoder[1] = frontRightEncoderCount;
-        changeInEncoder[2] = backLeftEncoderCount;
-        changeInEncoder[3] = backRightEncoderCount;
-
-        encoderReset = false;
-      }
-      
-      // Setpoint provided by ros_arduino_bridge is in ticks/second so the input to the PID must be the same
-      if(changeInEncoder[0] == 0)
-      {
-        inputLF = 0;
-      }
-      else
-      {
-        inputLF = changeInEncoder[2] / ((millis() - lastTimes[0]) * 0.001) / ENCODERTRUETPR;
-        lastTimes[0] = millis();
-        lastEncoderCount[0] = backLeftEncoderCount;
-      }
-
-      if(changeInEncoder[1] == 0)
-      {
-        inputRF = 0;
-      }
-      else
-      {
-        inputRF = changeInEncoder[3] / ((millis() - lastTimes[1]) * 0.001) / ENCODERTRUETPR;
-        lastTimes[1] = millis();
-        lastEncoderCount[1] = backRightEncoderCount;
-      }
-
-      if(changeInEncoder[2] == 0)
-      {
-        inputLB = 0;
-      }
-      else
-      {
-        inputLB = (changeInEncoder[2] / ((millis() - lastTimes[2]) * 0.001)) / ENCODERTRUETPR;
-        lastTimes[2] = millis();
-        lastEncoderCount[2] = backLeftEncoderCount;
-      }
-
-      if(changeInEncoder[3] == 0)
-      {
-        inputRB = 0;
-      }
-      else
-      {
-        inputRB = changeInEncoder[3] / ((millis() - lastTimes[3]) * 0.001) / ENCODERTRUETPR;
-        lastTimes[3] = millis();
-        lastEncoderCount[3] = backRightEncoderCount;
-      }
-
-      inputLF = inputLB;
-      inputRF = inputRB;
-
-      // Compute the new PWM frequency
-      leftFrontPID.Compute();
-      leftBackPID.Compute();
-      rightFrontPID.Compute();
-      rightBackPID.Compute();
-
-      // Set the new PWM frequency
-      frontLeftMotor.move(outputLF);
-      frontRightMotor.move(outputRF);
-      backLeftMotor.move(outputLB);
-      backRightMotor.move(outputRB);
+      changeInEncoder[0] = backLeftEncoderCount;
+      changeInEncoder[1] = backRightEncoderCount;
+      encoderReset = false;
+    }
+    
+    // Setpoint provided by ros_arduino_bridge is in ticks/second so the input to the PID must be the same
+    if(changeInEncoder[0] != 0)
+    {
+      inputLB = changeInEncoder[0];
+      lastEncoderCount[0] = backLeftEncoderCount;
+    }
+    else
+    {
+      inputLB = 0;
     }
 
-    Serial.println("Encoders: ");
-    Serial.println(backRightEncoderCount);
-    Serial.println("Outputs: ");
-    Serial.println(outputLF);
-    Serial.println(outputLB);
-    Serial.println(outputRF);
-    Serial.println(outputRB);
-    Serial.print("\n");
-  }
+    if(changeInEncoder[1] != 0)
+    {
+      inputRB = changeInEncoder[1];
+      lastEncoderCount[1] = backRightEncoderCount;
+    }
+    else
+    {
 
-  // When the input gets sent:
-  String input = Serial.readString();
+      inputRB = 0;
+    }
 
-  char mode = input[0];
-  switch(mode)
-  {
-    case('m'):
-      usePID = true; // Let PID do the work
-      input.remove(0, 2);
-      setSetPoints(input);
-      break;
-      
-    case('o'):
-      usePID = false; // Want to set the PWM manually
-      input.remove(0, 2); // Remove the mode and space that follows
+    // Compute the new PWM frequency
+    leftBackPID.Compute();
+    rightBackPID.Compute();
 
-      //Get the motor values
-      getMotorValues(motorVelPointer, input);
-      break;
-      
-    case('e'):
-      sendEncoderValues();
-      break;
-    
-    case('r'):
-      frontLeftEncoderCount = 0;
-      backLeftEncoderCount = 0;
-      frontRightEncoderCount = 0;
-      backRightEncoderCount = 0;
+//    Serial.println("Change: ");
+//    Serial.println(changeInEncoder[0]);
+//    Serial.println(changeInEncoder[1]);
+//
+//    Serial.println("Encoders: ");
+//    Serial.println(backLeftEncoderCount);
+//    Serial.println(backRightEncoderCount);
+//
+//    Serial.println("Set points: ");
+//    Serial.println(setPointLB);
+//    Serial.println(setPointRB);
+//
+//    Serial.println("Inputs: ");
+//    Serial.println(inputLB);
+//    Serial.println(inputRB);
+//
+//    Serial.println("Outputs: ");
+//    Serial.println(outputLB);
+//    Serial.println(outputRB);
 
-      encoderReset = true;
-      break;
+    // Set the new PWM frequency
+    frontLeftMotor.move(outputLB);
+    frontRightMotor.move(outputRB);
+    backLeftMotor.move(outputLB);
+    backRightMotor.move(outputRB);
 
-    default:
-      Serial.println("Invalid Input");
+    nextPIDInterval += PIDINTERVAL;
   }
 }
 
@@ -388,9 +358,15 @@ void setSetPoints(String setPointString)
 
   // Set the set points for the encoders
   setPointLB = (double)(*setPointBufferPointer);
-  setPointLF = (double)(*setPointBufferPointer);
   setPointRB = (double)(*(setPointBufferPointer + 1));
-  setPointRF = (double)(*(setPointBufferPointer + 1));
+  if(setPointLB == 0 && setPointRB == 0)
+  { 
+    frontLeftMotor.move(0);
+    frontRightMotor.move(0);
+    backLeftMotor.move(0);
+    backRightMotor.move(0);
+    //usePID = false;
+  }
 
   // Response message to controller manager
   Serial.println("OK");
@@ -407,51 +383,27 @@ void sendEncoderValues()
  *These functions are attached to the interrupts to determine 
  *whether the motor is moving clockwise or counter clockwise 
  */
-void updatefrontLeftEncoderCount()
-{
-  // If ENCODER1 is high by the time it gets to ENCODER2 then it's moving clockwise
-  if(digitalRead(ENCODER1) == HIGH && digitalRead(ENCODER2) == LOW)
-  {
-    frontLeftEncoderCount++;
-  }
-  else
-  {
-    frontLeftEncoderCount--;
-  }
-}
 
 void updatebackLeftEncoderCount()
 {
-  if(digitalRead(ENCODER3) == HIGH && digitalRead(ENCODER4) == LOW)
-  {
-    backLeftEncoderCount++;
-  }
-  else
+  if(digitalRead(ENCODERABL) == LOW)
   {
     backLeftEncoderCount--;
   }
-}
-
-void updatefrontRightEncoderCount()
-{
-  if(digitalRead(ENCODER5) == HIGH && digitalRead(ENCODER6) == LOW)
-  {
-    frontRightEncoderCount--;
-  }
   else
   {
-    frontRightEncoderCount++;
+    backLeftEncoderCount++;
   }
 }
 
 void updatebackRightEncoderCount()
 {
-  if(digitalRead(ENCODER7) == HIGH && digitalRead(ENCODER8) == LOW)
+  if(digitalRead(ENCODERABR) == LOW)
   {
-    backRightEncoderCount--;
+    backRightEncoderCount++;
   }
   else
   {
-    backRightEncoderCount++;
+    backRightEncoderCount--;
   }
 }

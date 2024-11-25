@@ -80,6 +80,10 @@ void updateEncoderCount() {
   } else {
     encoderCount--;
   }
+
+  if (bottomToTop != -1 && (encoderCount > bottomToTop + 100 || encoderCount < -100)) {
+    analogWrite(MOTOROUT, 0);
+  }
 }
 
 // Runs the homing procedure
@@ -100,13 +104,18 @@ void homingProcedure() {
 // Moves the forklift to specified position.
 // 1.0: top, 0.5: middle, 0.0: bottom
 void toPos(float val) {
-  // Doesn't run if forklift isn't homed
-  if (bottomToTop == -1) {
+  // Doesn't run if forklift isn't homed or is provided an invalid value
+  if (bottomToTop == -1 || val < 0.0 || val > 1.0) {
     return;
   }
 
   // Calculate the target amount of ticks and move the forks there
   int target = round(bottomToTop * val);
+
+  // If the current position is within 20 encoder ticks, don't do anything
+  if (abs(encoderCount - target) <= 20) {
+    return;
+  }
   
   int direction = encoderCount < target ? 1 : 0;
   digitalWrite(DIRECTION, direction);
