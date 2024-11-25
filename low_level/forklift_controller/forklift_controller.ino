@@ -6,8 +6,8 @@ constexpr int DIRECTION = 11;     // Direction pin out
 constexpr int TOPSWITCH = 5;      // Top sensor switch
 constexpr int BOTTOMSWITCH = 6;   // Bottom sensor switch
 
-constexpr int ENCODER1 = 8;       // First encoder pin
-constexpr int ENCODER2 = 9;       // Second encoder pin
+constexpr int ENCODER1 = 9;       // First encoder pin
+constexpr int ENCODER2 = 8;       // Second encoder pin
 
 constexpr int MOTORSPEED = 100;   // Set the motor speed
 
@@ -88,6 +88,8 @@ void updateEncoderCount() {
 
 // Runs the homing procedure
 void homingProcedure() {
+  bottomToTop = -1;
+  
   // Lower the forklift as far as possible.
   digitalWrite(DIRECTION, 0);
   analogWrite(MOTOROUT, MOTORSPEED);
@@ -98,6 +100,7 @@ void homingProcedure() {
   digitalWrite(DIRECTION, 1);
   analogWrite(MOTOROUT, MOTORSPEED);
   while (digitalRead(TOPSWITCH) == LOW);
+  
   bottomToTop = encoderCount;
 }
 
