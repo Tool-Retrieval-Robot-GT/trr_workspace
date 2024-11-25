@@ -16,7 +16,7 @@ class QRReader(Node):
 
         #Sets the camera to capture from
         try:
-            self.capture = cv2.VideoCapture(0)
+            self.capture = cv2.VideoCapture(2)
         except:
             self.get_logger().info('Could not open camera')
 
@@ -57,16 +57,19 @@ class QRReader(Node):
         self.isCentered = False
         self.atBin = False
         self.decodeMsg = []
+        self.internalTimer = time.time()
+        self.endTimer = time.time() + 1
 
 
         # 0.42 is a good height for the testing table this project is utilizing
         self.forkMsg = Float32()
         self.velocityMsg = Twist()
-        self.moveForewardMsg = Twist()
+        self.moveForwardMsg = Twist()
 
-        self.forkMsg.data = 0.5
+        self.forkMsg.data = 0.43
         self.velocityMsg.angular.z = 0.0
-        self.moveForewardMsg.linear.x = 0.25
+        self.moveForwardMsg.linear.x = 0.07
+        self.moveForwardMsg.angular.z = 0.0
 
         self.lastForkMsg = 0.42
         self.lastVelocity = 0.0
@@ -100,16 +103,16 @@ class QRReader(Node):
 
             # The resulting rectangular coordinates are relative to the camera frame
             # To get the center of the QR code explicitly you need to start from it's bounds and then add the length or width divided by 2 
-            self.QRCodeCenter = [QRLeft + (self.QRWidth / 2), QRTop + (self.QRHeight / 2) + 20] # The plus 40 is the get the forklift under the the QR Code
+            self.QRCodeCenter = [QRLeft + (self.QRWidth / 2), QRTop + (self.QRHeight / 2) + 15] # The plus 40 is the get the forklift under the the QR Code
 
             # Do something with that information
             if not self.isCentered:
-                if(self.isQRCodeCentered() == True):
+                if(self.isQRCodeCentered() == False):
                     self.isCentered = True
             
             if(self.isCentered == True and self.atBin == False):
                 if(self.driveToQRCode() == True):
-                    self.atBin == True
+                    self.atBin = True
 
             if(self.isCentered and self.atBin):
                 # Obtain the bin
@@ -135,7 +138,7 @@ class QRReader(Node):
         else:
             if(self.isHomed == False):
                 self.forkliftPublisher.publish(self.forkMsg)
-                time.sleep(10) # Give it time to home
+                time.sleep(15) # Give it time to home
                 self.isHomed = True
 
             # Determine which axis needs to change
@@ -143,26 +146,33 @@ class QRReader(Node):
             leftVal = self.cameraCenter[0] - self.QRCodeCenter[0]
 
             # Adjust the height of the forklift
-            if(self.cameraCenter[1] != self.QRCodeCenter[1]):
-                if (topVal > 0):
+            if(self.cameraCenter[1] - 10 > self.QRCodeCenter[1] or self.cameraCenter[1] + 10 < self.QRCodeCenter[1]):
+                print(self.cameraCenter[1])
+                print(self.QRCodeCenter[1])
+                if (topVal < 0):
                     # Move the camera (forklift) up
-                    self.forkMsg.data += 0.05
-                elif (topVal < 0):
+                    self.forkMsg.data += 0.005
+                elif (topVal > 0):
                     # Move the camera (forklift) down
-                    self.forkMsg.data -= 0.05
-
+                    self.forkMsg.data -= 0.005
                 self.forkliftPublisher.publish(self.forkMsg)
+                print(self.forkMsg.data)
+            else:
+                print("Centered")
+                return True
 
             # Adjust the robot to be more centered
-            if(self.cameraCenter[0] != self.QRCodeCenter[0]):
+            if(self.cameraCenter[0] != self.QRCodeCenter[0] and self.internalTimer > self.endTimer):
                 if(leftVal > 0):
                     # Move robot left
-                    self.velocityMsg.angular.z -= 0.4
+                    self.velocityMsg.angular.z = -0.1
+                    self.endTimer = time.time() + 5
                 elif(leftVal < 0):
                     # Move robot right
-                    self.velocityMsg.angular.z += 0.4
-
+                    self.velocityMsg.angular.z = 0.1
+                    self.endTimer = time.time() + 5
                 self.movementPublisher.publish(self.velocityMsg)
+            self.internalTimer = time.time()
 
             # Tell the node it isn't centered yet
             return False
@@ -172,20 +182,39 @@ class QRReader(Node):
     in which the robot will begin to move forward a little bit more before stopping.
     """
     def driveToQRCode(self):
-        if not (self.QRWidth <=  3 * self.cameraWidth / 4 and self.QRHeight <= 3 * self.cameraHeight / 4):
-            self.movementPublisher.publish(self.moveForewardMsg)
+        print("Made it here")
+        print("Width:")
+        print(self.QRWidth)
+        print(self.cameraWidth * 1/7)
+        print("Height:")
+        print(self.QRHeight)
+        print(self.cameraHeight * 1/6)
+        if not((self.QRWidth >=  1/7 * self.cameraWidth) and (self.QRHeight >= 1/6 * self.cameraHeight)):
+            print("Adjust")
+            self.movementPublisher.publish(self.moveForwardMsg)
             return False
         else:
+            print("Here")
+            self.movementPublisher.publish(self.moveForwardMsg)
+            time.sleep(0.5)
+            self.moveForwardMsg.data = 0.0
+            self.movementPublisher.publish(self.moveForwardMsg)
             # Once the QR code is taking up most of the frame go foreward an appoximate distance
-            endTime = time.time() + 1 # Run for 1 second
+            """endTime = time.time()
+            printf("here")
+            endTime += 2 # Run for 1 second
+            print("here")
             while(currentTime < endTime):
-                currentTime = time.time()
+                print("Drive")
+                self.movementPublisher.publish(self.moveForwardMsg)
+                currentTime = time.time()"""
             return True
 
     """
     This function will raise the forklift so the bin can be taken away
     """
     def raiseForkLift(self):
+        print("Made it here 2")
         forkLiftMsg = Float32()
         forkLiftMsg.data = 0.7
         # Raise the bin to max height
