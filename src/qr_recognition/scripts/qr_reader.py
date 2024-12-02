@@ -16,7 +16,7 @@ class QRReader(Node):
 
         #Sets the camera to capture from
         try:
-            self.capture = cv2.VideoCapture(2)
+            self.capture = cv2.VideoCapture(0)
         except:
             self.get_logger().info('Could not open camera')
 
@@ -63,14 +63,14 @@ class QRReader(Node):
         self.endTimer = time.time() + 1
 
 
-        # 0.42 is a good height for the testing table this project is utilizing
         self.forkMsg = Float32()
         self.velocityMsg = Twist()
         self.moveForwardMsg = Twist()
 
+        # 0.43 is a good height for the testing table this project is utilizing
         self.forkMsg.data = 0.43
         self.velocityMsg.angular.z = 0.0
-        self.moveForwardMsg.linear.x = 0.07
+        self.moveForwardMsg.linear.x = 0.1
 
     # This function reads the image and image data from the camera and decodes it
     def imgCallback(self, data):
@@ -163,21 +163,25 @@ class QRReader(Node):
             # If the forklift isn't in the right place then attempt to fix it
             if(forkliftPositionCorrect == False):
                 heightDifference = self.cameraCenter[1] - self.QRCodeCenter[1]
-                if(heightDifference > 0 and self.forkLiftMsg.data > 0.0):
+                if(heightDifference > 0 and self.forkMsg.data > 0.0):
+                    print("Moving fork down")
                     # Move forklift down
-                    self.forkLiftMsg.data -= 0.005
+                    self.forkMsg.data -= 0.005
                     # For the odd number decrements
-                    if(self.forkLiftMsg.data < 0.0):
-                        self.forkLiftMsg.data = 0.0
-                elif(heightDifference < 0 and self.forkLiftMsg.data < 1.0):
+                    if(self.forkMsg.data < 0.0):
+                        self.forkMsg.data = 0.0
+                elif(heightDifference < 0 and self.forkMsg.data < 1.0):
+                    print("Moving fork up")
                     # Move forklift up
-                    self.forkLiftMsg += 0.05
+                    self.forkMsg += 0.05
                     #For the odd number increments
-                    if(self.forkLiftMsg.data > 1.0):
-                        self.forkLiftMsg.data = 1.0
-                self.forkliftPublisher.publish(forkLiftMsg)
+                    if(self.forkMsg.data > 1.0):
+                        self.forkMsg.data = 1.0
+                self.forkliftPublisher.publish(self.forkMsg)
 
             # If the robot is not centered then attempt to fix it
+            # Skip for now
+            """
             if(robotPositionCorrect == False):
                 widthDifference = self.cameraCenter[0] - self.QRCodeCenter[0]
                 if(widthDifference > 0):
@@ -192,6 +196,7 @@ class QRReader(Node):
                 time.sleep(1) # Move the robot for one second before stopping it
                 self.velocityMsg.angular.z = 0.0
                 self.movementPublisher.publish(self.velocityMsg)
+            """
 
             return False
 
@@ -202,6 +207,11 @@ class QRReader(Node):
     def driveToQRCode(self):
         stopMessage = Twist()
         stopMessage.linear.x = 0.0
+        print("Height Ratio:")
+        print(self.QRToCameraHeightRatio)
+        print("Width Ratio:")
+        print(self.QRToCameraWidthRatio)
+
         if not (self.QRToCameraHeightRatio < 2 and self.QRToCameraWidthRatio < 2):
             # Move forward for half a second
             self.movementPublisher.publish(self.moveForwardMsg)
@@ -219,10 +229,9 @@ class QRReader(Node):
     This function will raise the forklift so the bin can be taken away
     """
     def raiseForkLift(self):
-        forkLiftMsg = Float32()
-        forkLiftMsg.data = 0.7
+        self.forkLiftMsg.data = 0.7
         # Raise the bin to max height
-        self.forkliftPublisher.publish(forkLiftMsg)
+        self.forkliftPublisher.publish(self.forkLiftMsg)
 
 def main(args=None):
     rclpy.init(args=args)
