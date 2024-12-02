@@ -16,7 +16,7 @@ class QRReader(Node):
 
         #Sets the camera to capture from
         try:
-            self.capture = cv2.VideoCapture(0)
+            self.capture = cv2.VideoCapture(3)
         except:
             self.get_logger().info('Could not open camera')
 
@@ -46,8 +46,8 @@ class QRReader(Node):
         self.forkliftPublisher = self.create_publisher(Float32, '/fork_pos', 10)
 
         # Timer initializes at zero seconds so it doesn't publish when not needed
-        self.timeToSend = 0
-        self.timer = self.create_timer(self.timeToSend, self.timerCallback)
+        self.timeToSend = 1
+        self.timer = self.create_timer(0.05, self.timerCallback)
 
         # This subscriber will get the image from the camera
         self.subscription = self.create_subscription(Image, '/frames', self.imgCallback, 10)
@@ -67,14 +67,13 @@ class QRReader(Node):
         self.velocityMsg = Twist()
         self.moveForwardMsg = Twist()
 
-        # 0.43 is a good height for the testing table this project is utilizing
-        self.forkMsg.data = 0.43
+        # 0.42 is a good height for the testing table this project is utilizing
+        self.forkMsg.data = 0.42
         self.velocityMsg.angular.z = 0.0
         self.moveForwardMsg.linear.x = 0.1
 
     # This function reads the image and image data from the camera and decodes it
     def imgCallback(self, data):
-        self.get_logger().info('Getting frame')
         currentImage = self.bridge.imgmsg_to_cv2(data) # Converts the ros2 image to an opencv image
         self.decodeMsg = decode(currentImage) # Decodes the image and stores the data
 
@@ -92,7 +91,7 @@ class QRReader(Node):
 
         if(self.decodeMsg != []):
             self.imageFound = True
-            self.timeToSend = 0.5 # Send data every 0.5 seconds
+            self.timeToSend = 0.05 # Send data every 0.5 seconds
 
             # Store the QR information:
             for object in self.decodeMsg:
@@ -103,8 +102,7 @@ class QRReader(Node):
 
             # The resulting rectangular coordinates are relative to the camera frame
             # To get the center of the QR code explicitly you need to start from it's bounds and then add the length or width divided by 2 
-            self.QRCodeCenter = [QRLeft + (self.QRWidth / 2), QRTop + (self.QRHeight / 2) + 15] # The plus 15 is the get the forklift under the the QR Code
-
+            self.QRCodeCenter = [QRLeft + (self.QRWidth / 2), QRTop + (self.QRHeight / 2) + 10] # The plus 15 is the get the forklift under the the QR Code
             # Force the code to center first
             if (self.isCentered == False):
                 if(self.isQRCodeCentered() == True):
@@ -112,11 +110,11 @@ class QRReader(Node):
             # Once centered drive to the bin
             elif(self.isCentered == True and self.atBin == False):
                 if(self.driveToQRCode() == True):
-                    self.atBin = True
+                    self.raiseForkLift()
             # Once at bin pick it up
-            elif(self.isCentered == True and self.atBin == True):
+            #elif(self.isCentered == True and self.atBin == True):
                 # Obtain the bin
-                self.raiseForkLift()
+                #self.raiseForkLift()
 
                 # Reset the appropriate values
                 self.isCentered = False
@@ -134,18 +132,22 @@ class QRReader(Node):
     def isQRCodeCentered(self):
         forkliftPositionCorrect = False
         robotPositionCorrect = False
-        if((self.QRCodeCenter[1] < self.cameraCenter[1] + 5) and (self.QRCodeCenter[1] > self.cameraCenter[1] - 5)):
+        # Provide 10 pixels of wiggle room height-wise
+        if((self.QRCodeCenter[1] < self.cameraCenter[1] + 10) and (self.QRCodeCenter[1] > self.cameraCenter[1] - 10)):
             forkliftPositionCorrect = True
+            print("True")
+        #Provide 20 pixels of wiggle room width-wise
         if((self.QRCodeCenter[0] < self.cameraCenter[0] + 10) and (self.QRCodeCenter[0] > self.cameraCenter[0] - 10)):
             robotPositionCorrect = True
         # If the QR Code is not centered then center it
-        if(forkliftPositionCorrect == True and robotPositionCorrect == True):
+        if(forkliftPositionCorrect == True):
             return True
         else:
             if(self.isHomed == False):
                 self.forkliftPublisher.publish(self.forkMsg)
                 time.sleep(15) # Give the forklift time to get it's start up information
                 self.isHomed = True
+                return False
 
             """
             [0, 0]
@@ -163,17 +165,20 @@ class QRReader(Node):
             # If the forklift isn't in the right place then attempt to fix it
             if(forkliftPositionCorrect == False):
                 heightDifference = self.cameraCenter[1] - self.QRCodeCenter[1]
-                if(heightDifference > 0 and self.forkMsg.data > 0.0):
-                    print("Moving fork down")
+                print("Centers:")
+                print(self.cameraCenter[1])
+                print(self.QRCodeCenter[1])
+                if(heightDifference < 0 and self.forkMsg.data > 0.0):
+                    #print("Moving fork down")
                     # Move forklift down
-                    self.forkMsg.data -= 0.005
+                    self.forkMsg.data -= 0.0005
                     # For the odd number decrements
                     if(self.forkMsg.data < 0.0):
                         self.forkMsg.data = 0.0
-                elif(heightDifference < 0 and self.forkMsg.data < 1.0):
-                    print("Moving fork up")
+                elif(heightDifference > 0 and self.forkMsg.data < 1.0):
+                    #print("Moving fork up")
                     # Move forklift up
-                    self.forkMsg += 0.05
+                    self.forkMsg.data += 0.0005
                     #For the odd number increments
                     if(self.forkMsg.data > 1.0):
                         self.forkMsg.data = 1.0
@@ -212,26 +217,30 @@ class QRReader(Node):
         print("Width Ratio:")
         print(self.QRToCameraWidthRatio)
 
-        if not (self.QRToCameraHeightRatio < 2 and self.QRToCameraWidthRatio < 2):
-            # Move forward for half a second
+        if not (self.QRToCameraHeightRatio <= 3 and self.QRToCameraWidthRatio <= 6):
+            # Move forward
+            print("Moving forward on command")
             self.movementPublisher.publish(self.moveForwardMsg)
-            time.sleep(0.25)  # Give it some time to move
-            self.movementPublisher.publish(stopMessage)
+            #0.05)
+            #self.movementPublisher.publish(stopMessage)
             return False
         else:
             # QR Code can become unreadable when too close so send it forward an approximate distance
-            self.movementPublisher(self.moveForwardMsg)
-            time.sleep(0.25)
+            print("Moving forward alone")
+            self.movementPublisher.publish(self.moveForwardMsg)
+            time.sleep(0.4)
             self.movementPublisher.publish(stopMessage)
+            print("Out")
             return True
 
     """
     This function will raise the forklift so the bin can be taken away
     """
     def raiseForkLift(self):
-        self.forkLiftMsg.data = 0.7
+        self.forkMsg.data = 0.8
         # Raise the bin to max height
-        self.forkliftPublisher.publish(self.forkLiftMsg)
+        self.forkliftPublisher.publish(self.forkMsg)
+        print("Out of lift")
 
 def main(args=None):
     rclpy.init(args=args)
