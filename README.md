@@ -19,9 +19,11 @@ The second solution is inspired by the Articubot One (<https://github.com/joshne
 
 
 ### Dependencies
-- Ubuntu 22.04
-- ROS Humble
-Main:
-- PlatformIO (CLI)
-Old Main:
-- Arduino IDE
+- Ubuntu 22.04<br />
+- ROS Humble<br />
+
+Main:<br />
+- PlatformIO (CLI)<br />
+
+Old Main:<br />
+- Arduino IDE<br />
